@@ -1,0 +1,11 @@
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+sqlalchemy==2.0.23
+langdetect==1.0.9
+pytesseract==0.3.10
+Pillow==10.1.0
+mistralai==1.2.5
+httpx==0.25.2
+python-dotenv==1.0.0
+aiofiles==23.2.1

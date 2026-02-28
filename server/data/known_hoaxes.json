@@ -1,0 +1,58 @@
+[
+  {
+    "claim": "Muslims are poisoning water supplies",
+    "verdict": "FALSE",
+    "explanation": "This is a recurring communal hoax with no evidence. Multiple fact-checking organizations including Alt News, Boom Live, and India Today have debunked variants of this claim.",
+    "languages": ["hi", "en", "ta", "te", "bn"],
+    "keywords": ["poison", "water", "muslim", "जहर", "पानी", "முஸ்லிம்", "నీరు"]
+  },
+  {
+    "claim": "5G towers cause COVID-19",
+    "verdict": "FALSE",
+    "explanation": "There is no scientific evidence linking 5G technology to COVID-19. WHO and multiple health authorities have confirmed viruses cannot travel on radio waves.",
+    "languages": ["hi", "en", "ta", "te"],
+    "keywords": ["5G", "COVID", "corona", "tower", "कोरोना", "टावर"]
+  },
+  {
+    "claim": "Cow urine cures cancer",
+    "verdict": "FALSE",
+    "explanation": "There is no scientific evidence that cow urine can cure cancer. No peer-reviewed study supports this claim.",
+    "languages": ["hi", "en", "mr", "gu"],
+    "keywords": ["cow", "urine", "cancer", "गोमूत्र", "कैंसर", "गाय"]
+  },
+  {
+    "claim": "WhatsApp messages can hack your phone just by opening them",
+    "verdict": "MOSTLY_FALSE",
+    "explanation": "While specific vulnerabilities have existed in the past (and were patched), simply opening a regular WhatsApp text message does not hack your phone.",
+    "languages": ["hi", "en", "ta", "te", "bn"],
+    "keywords": ["WhatsApp", "hack", "phone", "virus", "वायरस", "हैक"]
+  },
+  {
+    "claim": "India's GDP growth rate is the highest in the world",
+    "verdict": "PARTIALLY_TRUE",
+    "explanation": "India has had periods of being the fastest-growing major economy, but this is not consistently true and depends on the time period and methodology used.",
+    "languages": ["hi", "en"],
+    "keywords": ["GDP", "growth", "India", "economy", "जीडीपी", "अर्थव्यवस्था"]
+  },
+  {
+    "claim": "Eating garlic prevents COVID-19",
+    "verdict": "FALSE",
+    "explanation": "WHO has confirmed there is no evidence that eating garlic protects against COVID-19. While garlic has some antimicrobial properties, it does not prevent coronavirus infection.",
+    "languages": ["hi", "en", "ta", "te", "bn", "mr"],
+    "keywords": ["garlic", "COVID", "corona", "prevent", "लहसुन", "கொரோனா"]
+  },
+  {
+    "claim": "Indian government is implanting microchips through vaccines",
+    "verdict": "FALSE",
+    "explanation": "This is a global conspiracy theory with no factual basis. Vaccines do not contain microchips. This claim has been debunked by health authorities worldwide.",
+    "languages": ["hi", "en", "ta", "te", "bn"],
+    "keywords": ["microchip", "vaccine", "government", "टीका", "माइक्रोचिप", "சிப்"]
+  },
+  {
+    "claim": "Love Jihad is an organized conspiracy",
+    "verdict": "UNVERIFIABLE",
+    "explanation": "Multiple investigations by Indian law enforcement agencies including NIA have found no evidence of an organized conspiracy. Individual cases of fraud exist across all communities.",
+    "languages": ["hi", "en", "ta", "te", "bn", "mr"],
+    "keywords": ["love jihad", "लव जिहाद", "conversion", "धर्मांतरण"]
+  }
+]
