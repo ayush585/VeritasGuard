@@ -68,6 +68,7 @@ def search_hoaxes(text: str) -> list[dict]:
 
         for hoax in all_hoaxes:
             keywords = json.loads(hoax.keywords)
+            languages = json.loads(hoax.languages) if hoax.languages else []
             keyword_hits = 0
             token_overlap_hits = 0
             for kw in keywords:
@@ -90,6 +91,8 @@ def search_hoaxes(text: str) -> list[dict]:
                     "match_score": matches / len(keywords) if keywords else 0,
                     "keyword_hits": keyword_hits,
                     "token_overlap_hits": token_overlap_hits,
+                    "keywords": keywords,
+                    "languages": languages,
                 })
 
         results.sort(key=lambda x: x["match_score"], reverse=True)

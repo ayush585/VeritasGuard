@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 import traceback
 import uuid
@@ -29,6 +30,32 @@ expert_agent = None
 # In-memory stores (demo-mode)
 results_store: dict[str, dict[str, Any]] = {}
 audio_store: dict[str, bytes] = {}
+
+
+def _load_float_env(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return default
+
+
+PIPELINE_DEADLINE_SECONDS = _load_float_env("PIPELINE_DEADLINE_SECONDS", 12.0)
+STAGE_BUDGETS = {
+    "language_detection": _load_float_env("STAGE_BUDGET_LANGUAGE_SECONDS", 0.8),
+    "translation": _load_float_env("STAGE_BUDGET_TRANSLATION_SECONDS", 1.5),
+    "claim_extraction": _load_float_env("STAGE_BUDGET_CLAIM_SECONDS", 1.5),
+    "verification": _load_float_env("STAGE_BUDGET_VERIFICATION_SECONDS", 4.0),
+    "verdict": _load_float_env("STAGE_BUDGET_VERDICT_SECONDS", 1.0),
+}
+OPTIONAL_AGENT_TIMEOUTS = {
+    "source_verification": _load_float_env("STAGE_BUDGET_SOURCE_SECONDS", 4.0),
+    "media_forensics": _load_float_env("STAGE_BUDGET_MEDIA_SECONDS", 2.0),
+    "context_history": _load_float_env("STAGE_BUDGET_CONTEXT_SECONDS", 1.2),
+    "expert_validation": _load_float_env("STAGE_BUDGET_EXPERT_SECONDS", 1.5),
+}
 
 
 def _try_load_optional_agents():
@@ -65,8 +92,11 @@ def _mark_stage_start(result: dict[str, Any], stage: str) -> float:
 
 
 def _mark_stage_end(result: dict[str, Any], stage: str, stage_start: float):
+    elapsed = max(0.0, time.perf_counter() - stage_start)
     timings = result.setdefault("stage_timings", {})
-    timings[stage] = round(time.perf_counter() - stage_start, 3)
+    timings[stage] = round(elapsed, 3)
+    latency = result.setdefault("latency_ms_by_stage", {})
+    latency[stage] = int(elapsed * 1000)
 
 
 def _warn(result: dict[str, Any], message: str):
@@ -78,6 +108,63 @@ def _warn(result: dict[str, Any], message: str):
 def _record_agent_error(result: dict[str, Any], agent_name: str, error: Exception | str):
     errors = result.setdefault("agent_errors", {})
     errors[agent_name] = str(error)
+
+
+def _remaining_pipeline_budget(result: dict[str, Any]) -> float:
+    deadline = float(result.get("_pipeline_deadline_perf", time.perf_counter()))
+    return max(0.0, deadline - time.perf_counter())
+
+
+def _stage_timeout(result: dict[str, Any], stage_name: str, *, minimum: float = 0.15) -> float:
+    base = STAGE_BUDGETS.get(stage_name, 1.0)
+    remaining = _remaining_pipeline_budget(result)
+    if remaining <= 0:
+        return minimum
+    return max(minimum, min(base, remaining))
+
+
+async def _run_with_timeout(awaitable: Any, timeout_seconds: float, timeout_label: str):
+    try:
+        return await asyncio.wait_for(awaitable, timeout=timeout_seconds)
+    except asyncio.TimeoutError as exc:
+        raise TimeoutError(f"{timeout_label} timed out after {timeout_seconds:.2f}s") from exc
+
+
+def _fallback_verdict_from_context(parallel_results: dict[str, Any], original_language: str) -> dict[str, Any]:
+    context_result = parallel_results.get("context_history", {}) if isinstance(parallel_results, dict) else {}
+    if isinstance(context_result, dict) and context_result.get("known_hoax_match"):
+        try:
+            score = float(context_result.get("match_confidence", 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
+        if score >= 0.82:
+            verdict = "FALSE" if score >= 0.9 else "MOSTLY_FALSE"
+            summary = (
+                "Known recurring hoax pattern matched in historical records. "
+                "This claim is treated as misinformation in degraded mode."
+            )
+            return {
+                "verdict": verdict,
+                "confidence": round(min(0.92, max(0.7, score)), 3),
+                "summary": summary,
+                "native_summary": summary if original_language == "en" else summary,
+                "key_evidence": ["Context/history strong match"],
+                "sources_quality": "low",
+                "deterministic_override_applied": True,
+                "override_reason": "context_fallback_override",
+                "override_match_score": round(score, 3),
+            }
+    return {
+        "verdict": "UNVERIFIABLE",
+        "confidence": 0.2,
+        "summary": "Unable to produce a final verdict due to timeout while preserving partial results.",
+        "native_summary": "Unable to produce a final verdict due to timeout while preserving partial results.",
+        "key_evidence": [],
+        "sources_quality": "none",
+        "deterministic_override_applied": False,
+        "override_reason": "timeout_fallback",
+        "override_match_score": None,
+    }
 
 
 async def initialize_agents():
@@ -102,19 +189,25 @@ async def verify_text(
 ) -> str:
     """Run the full verification pipeline on input text."""
     vid = verification_id or str(uuid.uuid4())
+    created_at = datetime.utcnow().isoformat()
     results_store[vid] = {
         "verification_id": vid,
         "status": "processing",
         "input_type": input_type,
         "original_text": text,
-        "started_at": datetime.utcnow().isoformat(),
+        "started_at": created_at,
         "stage": "language_detection",
         "warnings": [],
         "agent_errors": {},
         "stage_timings": {},
+        "latency_ms_by_stage": {},
+        "search_provider": "none",
+        "search_results_count": 0,
         "audio_available": False,
         "audio_status": "pending",
         "audio_message": "Audio generation not started.",
+        "_pipeline_start_perf": time.perf_counter(),
+        "_pipeline_deadline_perf": time.perf_counter() + PIPELINE_DEADLINE_SECONDS,
     }
     if ocr_metadata:
         results_store[vid]["ocr_metadata"] = ocr_metadata
@@ -169,15 +262,19 @@ async def _run_pipeline(
     ocr_metadata: dict[str, Any],
 ):
     result = results_store[vid]
+    if "_pipeline_deadline_perf" not in result:
+        result["_pipeline_start_perf"] = time.perf_counter()
+        result["_pipeline_deadline_perf"] = time.perf_counter() + PIPELINE_DEADLINE_SECONDS
     try:
         # Stage 1: Language detection
         stage_start = _mark_stage_start(result, "language_detection")
         try:
-            lang_result = await language_agent.process({"text": text})
+            timeout = _stage_timeout(result, "language_detection")
+            lang_result = await _run_with_timeout(language_agent.process({"text": text}), timeout, "language_detection")
             detected_lang = normalize_language_code(lang_result.get("language", "en"))
         except Exception as e:
             _record_agent_error(result, "language_detection", e)
-            _warn(result, "Language detection failed, defaulted to English.")
+            _warn(result, "Language detection failed or timed out; defaulted to English.")
             lang_result = {"language": "en", "confidence": 0.5, "method": "fallback"}
             detected_lang = "en"
         result["detected_language"] = detected_lang
@@ -188,17 +285,22 @@ async def _run_pipeline(
         stage_start = _mark_stage_start(result, "translation")
         if detected_lang != "en":
             try:
-                trans_result = await translation_agent.process(
-                    {
-                        "text": text,
-                        "source_language": detected_lang,
-                        "target_language": "en",
-                    }
+                timeout = _stage_timeout(result, "translation")
+                trans_result = await _run_with_timeout(
+                    translation_agent.process(
+                        {
+                            "text": text,
+                            "source_language": detected_lang,
+                            "target_language": "en",
+                        }
+                    ),
+                    timeout,
+                    "translation",
                 )
                 english_text = trans_result.get("translated_text", text)
             except Exception as e:
                 _record_agent_error(result, "translation", e)
-                _warn(result, "Translation failed, using original text.")
+                _warn(result, "Translation failed/timed out, using original text.")
                 trans_result = {
                     "translated_text": text,
                     "source_language": detected_lang,
@@ -214,8 +316,16 @@ async def _run_pipeline(
 
         # Stage 3: claim extraction
         stage_start = _mark_stage_start(result, "claim_extraction")
+        compact_mode = detected_lang == "ur"
+        if compact_mode:
+            _warn(result, "Compact-mode budgets enabled for Urdu/long-tail latency control.")
         try:
-            claims_result = await claim_agent.process({"text": english_text, "original_text": text})
+            timeout = _stage_timeout(result, "claim_extraction")
+            claims_result = await _run_with_timeout(
+                claim_agent.process({"text": english_text, "original_text": text}),
+                timeout,
+                "claim_extraction",
+            )
             claims = claims_result.get("claims", [])
         except Exception as e:
             _record_agent_error(result, "claim_extraction", e)
@@ -232,47 +342,110 @@ async def _run_pipeline(
 
         # Stage 4: parallel verification
         stage_start = _mark_stage_start(result, "verification")
-        parallel_tasks: dict[str, Any] = {}
-        if source_agent:
-            parallel_tasks["source_verification"] = source_agent.process({"text": english_text, "claims": claims_result})
-        if media_agent:
-            parallel_tasks["media_forensics"] = media_agent.process(
-                {
-                    "text": english_text,
-                    "original_text": text,
-                    "input_type": input_type,
-                    "image_data": image_data,
-                    "mime_type": mime_type or "image/png",
-                    "ocr_metadata": ocr_metadata,
-                }
-            )
-        if context_agent:
-            parallel_tasks["context_history"] = context_agent.process(
-                {
-                    "text": english_text,
-                    "original_text": text,
-                    "claims": claims_result,
-                }
-            )
-        if expert_agent:
-            parallel_tasks["expert_validation"] = expert_agent.process({"text": english_text, "claims": claims_result})
+        parallel_tasks: dict[str, asyncio.Task] = {}
+        verification_timeout = _stage_timeout(result, "verification", minimum=0.4)
+        remaining_budget = _remaining_pipeline_budget(result)
+        if remaining_budget < 0.6:
+            _warn(result, "Skipping optional agents due to exhausted pipeline budget.")
+        else:
+            if source_agent:
+                source_timeout = min(
+                    OPTIONAL_AGENT_TIMEOUTS["source_verification"],
+                    2.6 if compact_mode else OPTIONAL_AGENT_TIMEOUTS["source_verification"],
+                )
+                parallel_tasks["source_verification"] = asyncio.create_task(
+                    _run_with_timeout(
+                        source_agent.process(
+                            {
+                                "text": english_text,
+                                "claims": claims_result,
+                                "compact_mode": compact_mode,
+                            }
+                        ),
+                        max(0.3, min(source_timeout, verification_timeout)),
+                        "source_verification",
+                    )
+                )
+            if media_agent:
+                parallel_tasks["media_forensics"] = asyncio.create_task(
+                    _run_with_timeout(
+                        media_agent.process(
+                            {
+                                "text": english_text,
+                                "original_text": text,
+                                "input_type": input_type,
+                                "image_data": image_data,
+                                "mime_type": mime_type or "image/png",
+                                "ocr_metadata": ocr_metadata,
+                            }
+                        ),
+                        max(0.3, min(OPTIONAL_AGENT_TIMEOUTS["media_forensics"], verification_timeout)),
+                        "media_forensics",
+                    )
+                )
+            if context_agent:
+                parallel_tasks["context_history"] = asyncio.create_task(
+                    _run_with_timeout(
+                        context_agent.process(
+                            {
+                                "text": english_text,
+                                "original_text": text,
+                                "claims": claims_result,
+                            }
+                        ),
+                        max(0.3, min(OPTIONAL_AGENT_TIMEOUTS["context_history"], verification_timeout)),
+                        "context_history",
+                    )
+                )
+            if expert_agent:
+                parallel_tasks["expert_validation"] = asyncio.create_task(
+                    _run_with_timeout(
+                        expert_agent.process(
+                            {
+                                "text": english_text,
+                                "claims": claims_result,
+                                "compact_mode": compact_mode,
+                            }
+                        ),
+                        max(0.3, min(OPTIONAL_AGENT_TIMEOUTS["expert_validation"], verification_timeout)),
+                        "expert_validation",
+                    )
+                )
 
         parallel_results: dict[str, Any] = {}
         if parallel_tasks:
-            names = list(parallel_tasks.keys())
-            outcomes = await asyncio.gather(*parallel_tasks.values(), return_exceptions=True)
-            for name, outcome in zip(names, outcomes):
-                if isinstance(outcome, Exception):
-                    _record_agent_error(result, name, outcome)
+            done, pending = await asyncio.wait(
+                set(parallel_tasks.values()),
+                timeout=verification_timeout,
+                return_when=asyncio.ALL_COMPLETED,
+            )
+
+            task_to_name = {task: name for name, task in parallel_tasks.items()}
+            for completed_task in done:
+                name = task_to_name[completed_task]
+                try:
+                    outcome = completed_task.result()
+                except Exception as e:
+                    _record_agent_error(result, name, e)
                     _warn(result, f"{name} failed and was skipped.")
-                    parallel_results[name] = {"error": str(outcome)}
-                else:
-                    parallel_results[name] = outcome
+                    parallel_results[name] = {"error": str(e)}
+                    continue
+                parallel_results[name] = outcome
+
+            for pending_task in pending:
+                name = task_to_name[pending_task]
+                pending_task.cancel()
+                _record_agent_error(result, name, "Timed out in verification stage budget.")
+                _warn(result, f"{name} timed out and was skipped.")
+                parallel_results[name] = {"error": "Timed out in verification stage budget."}
+
         result["agent_results"] = parallel_results
         source_meta = parallel_results.get("source_verification", {})
         if isinstance(source_meta, dict):
             result["search_provider"] = source_meta.get("search_provider", "none")
             result["search_results_count"] = source_meta.get("search_results_count", 0)
+            for item in source_meta.get("warnings", []) if isinstance(source_meta.get("warnings"), list) else []:
+                _warn(result, f"source_verification: {item}")
         _mark_stage_end(result, "verification", stage_start)
 
         # Stage 5: verdict synthesis
@@ -284,18 +457,12 @@ async def _run_pipeline(
             **parallel_results,
         }
         try:
-            verdict_result = await verdict_agent.process(verdict_input)
+            timeout = _stage_timeout(result, "verdict", minimum=0.35)
+            verdict_result = await _run_with_timeout(verdict_agent.process(verdict_input), timeout, "verdict")
         except Exception as e:
             _record_agent_error(result, "verdict", e)
-            _warn(result, "Verdict synthesis failed; returned fallback UNVERIFIABLE verdict.")
-            verdict_result = {
-                "verdict": "UNVERIFIABLE",
-                "confidence": 0.2,
-                "summary": "Unable to produce a final verdict because of a synthesis error.",
-                "native_summary": "Unable to produce a final verdict because of a synthesis error.",
-                "key_evidence": [],
-                "sources_quality": "none",
-            }
+            _warn(result, "Verdict synthesis failed/timed out; returned fallback verdict.")
+            verdict_result = _fallback_verdict_from_context(parallel_results, detected_lang)
         _mark_stage_end(result, "verdict", stage_start)
 
         # Optional audio synthesis (non-fatal)
@@ -322,6 +489,9 @@ async def _run_pipeline(
                 "summary": verdict_result.get("summary", ""),
                 "native_summary": verdict_result.get("native_summary", ""),
                 "key_evidence": verdict_result.get("key_evidence", []),
+                "deterministic_override_applied": verdict_result.get("deterministic_override_applied", False),
+                "override_reason": verdict_result.get("override_reason"),
+                "override_match_score": verdict_result.get("override_match_score"),
                 "verdict_result": verdict_result,
                 "completed_at": datetime.utcnow().isoformat(),
             }
@@ -329,3 +499,6 @@ async def _run_pipeline(
     except Exception as e:
         traceback.print_exc()
         result.update({"status": "error", "stage": "error", "error": str(e), "audio_status": "failed"})
+    finally:
+        result.pop("_pipeline_start_perf", None)
+        result.pop("_pipeline_deadline_perf", None)

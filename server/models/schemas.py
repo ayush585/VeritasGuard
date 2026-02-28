@@ -30,8 +30,12 @@ class VerificationResult(BaseModel):
     warnings: Optional[list[str]] = None
     agent_errors: Optional[dict[str, str]] = None
     stage_timings: Optional[dict[str, float]] = None
+    latency_ms_by_stage: Optional[dict[str, int]] = None
     search_provider: Optional[str] = None
     search_results_count: Optional[int] = None
+    deterministic_override_applied: Optional[bool] = None
+    override_reason: Optional[str] = None
+    override_match_score: Optional[float] = None
     audio_available: Optional[bool] = None
     audio_status: Optional[str] = None
     audio_message: Optional[str] = None

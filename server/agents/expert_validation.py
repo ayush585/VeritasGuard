@@ -27,16 +27,24 @@ class ExpertValidationAgent(BaseAgent):
     async def process(self, data: dict) -> dict:
         text = data.get("text", "")
         claims = data.get("claims", {})
+        compact_mode = bool(data.get("compact_mode", False))
         main_claim = claims.get("main_claim", text) if isinstance(claims, dict) else text
 
-        prompt = (
-            f"As an expert fact-checker, validate this claim:\n\n"
-            f"CLAIM: {main_claim}\n\n"
-            f"ALL EXTRACTED CLAIMS: {claims}\n\n"
-            "If you are unsure or cannot confirm with authoritative knowledge, choose UNVERIFIABLE "
-            "and lower confidence. Mention caveats explicitly. "
-            f"Respond ONLY with JSON per your instructions."
-        )
+        if compact_mode:
+            prompt = (
+                "Validate this claim quickly with conservative confidence.\n"
+                f"CLAIM: {main_claim}\n"
+                "Return JSON only. If uncertain, choose UNVERIFIABLE."
+            )
+        else:
+            prompt = (
+                f"As an expert fact-checker, validate this claim:\n\n"
+                f"CLAIM: {main_claim}\n\n"
+                f"ALL EXTRACTED CLAIMS: {claims}\n\n"
+                "If you are unsure or cannot confirm with authoritative knowledge, choose UNVERIFIABLE "
+                "and lower confidence. Mention caveats explicitly. "
+                f"Respond ONLY with JSON per your instructions."
+            )
 
         response = await self._query(prompt)
         result = self._parse_response(response)

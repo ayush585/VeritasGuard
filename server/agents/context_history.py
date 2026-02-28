@@ -4,6 +4,15 @@ import re
 import unicodedata
 
 
+HIGH_RISK_CATEGORY_KEYWORDS = {
+    "communal": ["muslim", "hindu", "religious", "riot", "communal"],
+    "health": ["covid", "vaccine", "cure", "doctor", "medical", "who"],
+    "panic": ["child", "kidnap", "gang", "alert", "panic", "share immediately"],
+    "scam": ["otp", "free money", "link", "bank", "phishing"],
+    "election": ["vote", "evm", "election", "tampering", "booth"],
+}
+
+
 class ContextHistoryAgent(BaseAgent):
     def __init__(self):
         super().__init__("ContextHistory", model="mistral-medium-latest")
@@ -36,6 +45,15 @@ class ContextHistoryAgent(BaseAgent):
             return 0.0
         return len(text_tokens.intersection(phrase_tokens)) / len(phrase_tokens)
 
+    def _infer_risk_category(self, claim_text: str, explanation: str = "") -> str:
+        haystack = self._normalize_text(f"{claim_text} {explanation}")
+        if not haystack:
+            return "unknown"
+        for category, terms in HIGH_RISK_CATEGORY_KEYWORDS.items():
+            if any(term in haystack for term in terms):
+                return category
+        return "unknown"
+
     async def process(self, data: dict) -> dict:
         text = data.get("text", "")
         original_text = data.get("original_text", text)
@@ -61,6 +79,7 @@ class ContextHistoryAgent(BaseAgent):
             )
             match["overlap_score"] = round(overlap, 3)
             match["combined_score"] = round(max(match.get("match_score", 0.0), overlap), 3)
+            match["risk_category"] = self._infer_risk_category(match.get("claim", ""), match.get("explanation", ""))
         unique_matches.sort(key=lambda item: item.get("combined_score", 0.0), reverse=True)
 
         if unique_matches:
@@ -98,9 +117,9 @@ class ContextHistoryAgent(BaseAgent):
         # Inject raw DB matches for the verdict agent
         result["db_matches"] = unique_matches
         result["matched_claim_count"] = len(unique_matches)
-        if "match_confidence" not in result:
-            result["match_confidence"] = unique_matches[0]["combined_score"] if unique_matches else 0.0
-        if "pattern_type" not in result:
-            result["pattern_type"] = "recurring" if unique_matches else "unknown"
+        strongest = unique_matches[0] if unique_matches else {}
+        result["match_confidence"] = round(float(result.get("match_confidence") or strongest.get("combined_score") or 0.0), 3)
+        result["pattern_type"] = str(result.get("pattern_type") or ("recurring" if unique_matches else "unknown"))
+        result["risk_category"] = result.get("risk_category") or strongest.get("risk_category", "unknown")
 
         return result

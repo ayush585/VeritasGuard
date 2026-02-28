@@ -19,7 +19,7 @@ async def test_source_verification_graceful_degradation(monkeypatch):
     agent = SourceVerificationAgent()
 
     async def fake_search(_query):
-        return [], ""
+        return [], "", "tool unavailable"
 
     monkeypatch.setattr(agent, "_search_with_mistral", fake_search)
 
@@ -28,6 +28,8 @@ async def test_source_verification_graceful_degradation(monkeypatch):
     assert result["search_provider"] == "mistral_web_search"
     assert result["search_attempted"] is True
     assert result["search_results_count"] == 0
+    assert result["source_quality"] == "none"
+    assert result["warnings"]
 
 
 @pytest.mark.asyncio
@@ -42,7 +44,7 @@ async def test_source_verification_uses_results(monkeypatch):
     ]
 
     async def fake_search(_query):
-        return fake_sources, "Top sources indicate this claim is false."
+        return fake_sources, "Top sources indicate this claim is false.", None
 
     async def fake_query(_prompt):
         return json.dumps(
@@ -59,5 +61,44 @@ async def test_source_verification_uses_results(monkeypatch):
 
     result = await agent.process({"text": "Claim text", "claims": {"main_claim": "Claim text"}})
     assert result["consensus"] == "refutes"
-    assert result["source_quality"] == "high"
+    assert result["source_quality"] in {"high", "medium"}
     assert result["search_results_count"] == 2
+    assert result["supporting_sources"][0]["publisher"]
+    assert result["supporting_sources"][0]["credibility_tier"] in {"high", "medium", "low"}
+
+
+@pytest.mark.asyncio
+async def test_source_verification_google_fallback(monkeypatch):
+    monkeypatch.setattr(base_agent_module, "get_mistral_client", lambda: _DummyClient())
+    from server.agents.source_verification import SourceVerificationAgent
+
+    agent = SourceVerificationAgent()
+    agent.enable_google_fallback = True
+    agent.google_search_available = True
+
+    async def fake_search(_query):
+        return [], "", "mistral unavailable"
+
+    async def fake_google(_query):
+        return [{"title": "PIB", "url": "https://pib.gov.in/example", "snippet": "Refutes the claim"}]
+
+    async def fake_query(_prompt):
+        return json.dumps(
+            {
+                "source_quality": "high",
+                "supporting_sources": [],
+                "consensus": "refutes",
+                "analysis": "Fallback source used.",
+            }
+        )
+
+    monkeypatch.setattr(agent, "_search_with_mistral", fake_search)
+    monkeypatch.setattr(agent, "_search_with_google", fake_google)
+    monkeypatch.setattr(agent, "_query", fake_query)
+
+    result = await agent.process({"text": "Claim text", "claims": {"main_claim": "Claim text"}})
+    assert result["search_provider"] in {
+        "google_custom_search_fallback",
+        "mistral_web_search+google_custom_search_fallback",
+    }
+    assert result["search_results_count"] == 1

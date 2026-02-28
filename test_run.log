@@ -1,0 +1,121 @@
+VeritasGuard Demo Test Suite
+Target: http://localhost:8000
+Profile: stable
+Server status: {'status': 'ok', 'service': 'VeritasGuard', 'version': '1.0.0'}
+
+============================================================
+TEST: Hindi - Communal hoax (water poisoning)
+INPUT: सावधान! मुस्लिम लोग पानी में जहर मिला रहे हैं, तुरंत शेयर करें।...
+EXPECTED: FALSE
+  VID: 4bcc279e-3320-4961-b2ab-c3f2556168f6
+  ... processing (translation)
+  ... processing (claim_extraction)
+  ... processing (claim_extraction)
+  ... processing (verification)
+  ... completed (done)
+  RESULT: UNVERIFIABLE (confidence: 20%)
+  DETECTED LANG: hi
+  SEARCH: none (0 results)
+  AUDIO: disabled
+  SUMMARY: Unable to produce a final verdict due to timeout while preserving partial results.
+  NATIVE: Unable to produce a final verdict due to timeout while preserving partial results.
+  WARNINGS: ['Translation failed/timed out, using original text.', 'context_history timed out and was skipped.']
+  >> MISMATCH
+
+============================================================
+TEST: Tamil - Garlic COVID cure
+INPUT: பூண்டு சாப்பிட்டால் கொரோனா வராது என்று கூறப்படுகிறது....
+EXPECTED: FALSE
+  VID: aaade42b-c082-40d1-b461-67b2bd826a66
+  ... processing (translation)
+  ... processing (claim_extraction)
+  ... processing (verification)
+  ... processing (verification)
+  ... processing (verdict)
+  ... completed (done)
+  RESULT: UNVERIFIABLE (confidence: 20%)
+  DETECTED LANG: ta
+  SEARCH: mistral_web_search (0 results)
+  AUDIO: disabled
+  SUMMARY: Unable to produce a final verdict due to timeout while preserving partial results.
+  NATIVE: Unable to produce a final verdict due to timeout while preserving partial results.
+  WARNINGS: ['Claim extraction failed, using raw text as fallback claim.', 'context_history failed and was skipped.']
+  >> MISMATCH
+
+============================================================
+TEST: English - Vaccine microchip
+INPUT: The Indian government is secretly implanting microchips through COVID vaccines....
+EXPECTED: FALSE
+  VID: c6246bf9-5031-4f61-9031-205c50273769
+  ... processing (claim_extraction)
+  ... processing (verification)
+  ... processing (verification)
+  ... processing (verdict)
+  ... completed (done)
+  RESULT: UNVERIFIABLE (confidence: 20%)
+  DETECTED LANG: en
+  SEARCH: mistral_web_search (0 results)
+  AUDIO: disabled
+  SUMMARY: Unable to produce a final verdict due to timeout while preserving partial results.
+  NATIVE: Unable to produce a final verdict due to timeout while preserving partial results.
+  WARNINGS: ['expert_validation failed and was skipped.', 'context_history failed and was skipped.']
+  >> MISMATCH
+
+============================================================
+TEST: Bengali - WhatsApp hack panic
+INPUT: WhatsApp মেসেজ খুললেই ফোন হ্যাক হয়ে যাবে, সবাইকে পাঠাও।...
+EXPECTED: MOSTLY_FALSE
+  VID: 508bf3f9-3418-4150-b861-b1a274f30914
+  ... processing (claim_extraction)
+  ... processing (claim_extraction)
+  ... processing (verification)
+  ... processing (verification)
+  ... processing (verdict)
+  ... completed (done)
+  RESULT: UNVERIFIABLE (confidence: 20%)
+  DETECTED LANG: bn
+  SEARCH: mistral_web_search (0 results)
+  AUDIO: disabled
+  SUMMARY: Unable to produce a final verdict due to timeout while preserving partial results.
+  NATIVE: Unable to produce a final verdict due to timeout while preserving partial results.
+  WARNINGS: ['Claim extraction failed, using raw text as fallback claim.', 'context_history failed and was skipped.']
+  >> MISMATCH
+
+============================================================
+TEST: Marathi - Hot water cures COVID
+INPUT: दर १५ मिनिटांनी गरम पाणी पिल्याने कोरोना निघून जातो....
+EXPECTED: FALSE
+  VID: 1e291a34-523e-44dc-9480-3cb61d87ea6a
+  ... processing (claim_extraction)
+  ... processing (verification)
+  ... completed (done)
+  RESULT: UNVERIFIABLE (confidence: 30%)
+  DETECTED LANG: mr
+  SEARCH: mistral_web_search (0 results)
+  AUDIO: disabled
+  SUMMARY: Unable to determine verdict due to insufficient evidence.
+  NATIVE: Unable to determine verdict due to insufficient evidence.
+  WARNINGS: ["source_verification: Mistral web search unavailable ('Mistral' object has no attribute 'beta'; fallback error: 2 validation errors for Unmarshaller\nbody.nullable[list[Tool]].0.function\n  Field required [type=missing, input_value={'type': 'web_search'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/missing\nbody.Unset\n  Input should be a valid dictionary or instance of Unset [type=model_type, input_value=[{'type': 'web_search'}], input_type=list]\n    For further information visit https://errors.pydantic.dev/2.12/v/model_type)"]
+  >> MISMATCH
+
+============================================================
+TEST: Telugu - 5G conspiracy
+INPUT: 5G టవర్ల వల్ల కరోనా వ్యాపిస్తుంది....
+EXPECTED: FALSE
+  VID: bb4af544-3fb6-43c2-98cf-adfe950f84ae
+  ... processing (verification)
+  ... completed (done)
+  RESULT: UNVERIFIABLE (confidence: 30%)
+  DETECTED LANG: te
+  SEARCH: none (0 results)
+  AUDIO: disabled
+  SUMMARY: Unable to determine verdict due to insufficient evidence.
+  NATIVE: Unable to determine verdict due to insufficient evidence.
+  >> MISMATCH
+
+============================================================
+Completed: 6/6
+Timeouts: 0
+Pass rate: 0.0%
+Stable profile target: >=90% pass rate and zero timeout.
+Done!
