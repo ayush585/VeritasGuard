@@ -11,7 +11,7 @@ class ExpertValidationAgent(BaseAgent):
             "science, health, politics, and social issues. Validate claims by checking them "
             "against authoritative sources such as government agencies (PIB, ICMR, WHO), "
             "established fact-checkers (Alt News, Boom Live, India Today Fact Check), "
-            "and scientific consensus. "
+            "and scientific consensus. Do not overclaim certainty when evidence is weak. "
             "Respond with JSON:\n"
             "{\n"
             '  "expert_verdict": "TRUE|FALSE|MOSTLY_TRUE|MOSTLY_FALSE|PARTIALLY_TRUE|UNVERIFIABLE",\n'
@@ -19,6 +19,7 @@ class ExpertValidationAgent(BaseAgent):
             '  "authoritative_sources": ["..."],\n'
             '  "domain": "health|politics|science|religion|social|technology|other",\n'
             '  "reasoning": "...",\n'
+            '  "consistency": "high|medium|low",\n'
             '  "caveats": ["..."]\n'
             "}"
         )
@@ -32,7 +33,8 @@ class ExpertValidationAgent(BaseAgent):
             f"As an expert fact-checker, validate this claim:\n\n"
             f"CLAIM: {main_claim}\n\n"
             f"ALL EXTRACTED CLAIMS: {claims}\n\n"
-            f"Use your knowledge of authoritative sources to assess this claim. "
+            "If you are unsure or cannot confirm with authoritative knowledge, choose UNVERIFIABLE "
+            "and lower confidence. Mention caveats explicitly. "
             f"Respond ONLY with JSON per your instructions."
         )
 
@@ -46,7 +48,24 @@ class ExpertValidationAgent(BaseAgent):
                 "authoritative_sources": [],
                 "domain": "other",
                 "reasoning": response[:500] if response else "Could not complete expert validation.",
+                "consistency": "low",
                 "caveats": ["Expert analysis was limited"],
             }
+
+        confidence = result.get("confidence", 0.3)
+        try:
+            confidence = max(0.0, min(1.0, float(confidence)))
+        except (TypeError, ValueError):
+            confidence = 0.3
+        if not result.get("authoritative_sources") and confidence > 0.65:
+            confidence = 0.65
+            caveats = result.get("caveats", [])
+            if isinstance(caveats, list):
+                caveats.append("Confidence reduced because no explicit authoritative source was provided.")
+            result["caveats"] = caveats
+        result["confidence"] = confidence
+
+        if "consistency" not in result:
+            result["consistency"] = "medium" if confidence >= 0.6 else "low"
 
         return result

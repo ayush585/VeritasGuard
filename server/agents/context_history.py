@@ -1,5 +1,7 @@
 from server.agents.base_agent import BaseAgent
 from server.database import search_hoaxes
+import re
+import unicodedata
 
 
 class ContextHistoryAgent(BaseAgent):
@@ -22,6 +24,18 @@ class ContextHistoryAgent(BaseAgent):
             "}"
         )
 
+    def _normalize_text(self, text: str) -> str:
+        normalized = unicodedata.normalize("NFKC", str(text or "")).lower()
+        normalized = re.sub(r"[^\w\s]", " ", normalized, flags=re.UNICODE)
+        return re.sub(r"\s+", " ", normalized).strip()
+
+    def _score_overlap(self, text: str, phrase: str) -> float:
+        text_tokens = set(self._normalize_text(text).split())
+        phrase_tokens = set(self._normalize_text(phrase).split())
+        if not text_tokens or not phrase_tokens:
+            return 0.0
+        return len(text_tokens.intersection(phrase_tokens)) / len(phrase_tokens)
+
     async def process(self, data: dict) -> dict:
         text = data.get("text", "")
         original_text = data.get("original_text", text)
@@ -40,9 +54,19 @@ class ContextHistoryAgent(BaseAgent):
                 seen.add(m["claim"])
                 unique_matches.append(m)
 
+        for match in unique_matches:
+            overlap = max(
+                self._score_overlap(text, match["claim"]),
+                self._score_overlap(original_text, match["claim"]),
+            )
+            match["overlap_score"] = round(overlap, 3)
+            match["combined_score"] = round(max(match.get("match_score", 0.0), overlap), 3)
+        unique_matches.sort(key=lambda item: item.get("combined_score", 0.0), reverse=True)
+
         if unique_matches:
             matches_text = "\n".join(
-                f"- [{m['verdict']}] {m['claim']}: {m['explanation']} (score: {m['match_score']:.2f})"
+                f"- [{m['verdict']}] {m['claim']}: {m['explanation']} "
+                f"(db: {m['match_score']:.2f}, overlap: {m['overlap_score']:.2f})"
                 for m in unique_matches
             )
         else:
@@ -60,17 +84,23 @@ class ContextHistoryAgent(BaseAgent):
         response = await self._query(prompt)
         result = self._parse_response(response)
 
-        if "known_hoax_match" not in result:
+        if not isinstance(result, dict) or "known_hoax_match" not in result:
+            strongest_match = unique_matches[0] if unique_matches else None
             result = {
                 "known_hoax_match": len(unique_matches) > 0,
-                "match_confidence": unique_matches[0]["match_score"] if unique_matches else 0.0,
+                "match_confidence": strongest_match["combined_score"] if strongest_match else 0.0,
                 "historical_context": response[:500] if response else "No context available.",
-                "pattern_type": "unknown",
+                "pattern_type": "recurring" if unique_matches else "unknown",
                 "similar_claims": [m["claim"] for m in unique_matches],
                 "recommendation": "Manual review recommended.",
             }
 
         # Inject raw DB matches for the verdict agent
         result["db_matches"] = unique_matches
+        result["matched_claim_count"] = len(unique_matches)
+        if "match_confidence" not in result:
+            result["match_confidence"] = unique_matches[0]["combined_score"] if unique_matches else 0.0
+        if "pattern_type" not in result:
+            result["pattern_type"] = "recurring" if unique_matches else "unknown"
 
         return result

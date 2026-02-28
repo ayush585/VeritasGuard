@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from typing import Optional
+
+from pydantic import BaseModel
 
 
 class VerificationRequest(BaseModel):
@@ -15,6 +16,7 @@ class VerificationResponse(BaseModel):
 class VerificationResult(BaseModel):
     verification_id: str
     status: str
+    input_type: Optional[str] = None
     original_text: Optional[str] = None
     detected_language: Optional[str] = None
     translated_text: Optional[str] = None
@@ -25,4 +27,13 @@ class VerificationResult(BaseModel):
     native_summary: Optional[str] = None
     sources: Optional[list] = None
     agent_results: Optional[dict] = None
+    warnings: Optional[list[str]] = None
+    agent_errors: Optional[dict[str, str]] = None
+    stage_timings: Optional[dict[str, float]] = None
+    search_provider: Optional[str] = None
+    search_results_count: Optional[int] = None
+    audio_available: Optional[bool] = None
+    audio_status: Optional[str] = None
+    audio_message: Optional[str] = None
+    ocr_metadata: Optional[dict] = None
     error: Optional[str] = None

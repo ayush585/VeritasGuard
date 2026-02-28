@@ -9,5 +9,10 @@ export default defineConfig({
       '/verify': 'http://localhost:8000',
       '/result': 'http://localhost:8000',
     }
-  }
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js',
+    globals: true,
+  },
 })

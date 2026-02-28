@@ -9,3 +9,5 @@ mistralai==1.2.5
 httpx==0.25.2
 python-dotenv==1.0.0
 aiofiles==23.2.1
+pytest==8.3.4
+pytest-asyncio==0.24.0

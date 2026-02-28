@@ -27,6 +27,9 @@ class MediaForensicsAgent(BaseAgent):
         text = data.get("text", "")
         original_text = data.get("original_text", text)
         image_data = data.get("image_data")
+        mime_type = data.get("mime_type", "image/png")
+        input_type = data.get("input_type", "text")
+        ocr_metadata = data.get("ocr_metadata", {})
 
         # If we have raw image bytes, try Pixtral vision analysis
         vision_analysis = ""
@@ -39,7 +42,7 @@ class MediaForensicsAgent(BaseAgent):
                     messages=[{
                         "role": "user",
                         "content": [
-                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64}"}},
+                            {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{b64}"}},
                             {"type": "text", "text": (
                                 "Analyze this image for signs of manipulation or misinformation. "
                                 "Look for: edited text, photoshop artifacts, misleading context, "
@@ -60,6 +63,8 @@ class MediaForensicsAgent(BaseAgent):
         )
         if vision_analysis:
             prompt += f"IMAGE ANALYSIS: {vision_analysis}\n\n"
+        if ocr_metadata:
+            prompt += f"OCR METADATA: {ocr_metadata}\n\n"
         prompt += "Respond ONLY with JSON per your instructions."
 
         response = await self._query(prompt)
@@ -73,5 +78,10 @@ class MediaForensicsAgent(BaseAgent):
                 "red_flags": [],
                 "analysis": response[:500] if response else "Could not complete analysis.",
             }
+
+        result["input_type"] = input_type
+        result["vision_used"] = bool(image_data)
+        result["ocr_metadata"] = ocr_metadata
+        result["vision_analysis"] = vision_analysis[:800] if vision_analysis else ""
 
         return result

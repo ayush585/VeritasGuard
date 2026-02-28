@@ -2,57 +2,123 @@
   {
     "claim": "Muslims are poisoning water supplies",
     "verdict": "FALSE",
-    "explanation": "This is a recurring communal hoax with no evidence. Multiple fact-checking organizations including Alt News, Boom Live, and India Today have debunked variants of this claim.",
-    "languages": ["hi", "en", "ta", "te", "bn"],
-    "keywords": ["poison", "water", "muslim", "जहर", "पानी", "முஸ்லிம்", "నీరు"]
+    "explanation": "Recurring communal hoax with no credible evidence. Variants have been debunked by multiple Indian fact-checkers.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "keywords": [
+      "muslim", "poison", "water", "water supply", "drink water",
+      "jahar pani", "zeher paani", "visham neeru", "tanni poison",
+      "pani te bish", "neeru visha", "vellam visham", "paani vich zehar"
+    ]
   },
   {
     "claim": "5G towers cause COVID-19",
     "verdict": "FALSE",
-    "explanation": "There is no scientific evidence linking 5G technology to COVID-19. WHO and multiple health authorities have confirmed viruses cannot travel on radio waves.",
-    "languages": ["hi", "en", "ta", "te"],
-    "keywords": ["5G", "COVID", "corona", "tower", "कोरोना", "टावर"]
+    "explanation": "No scientific evidence supports 5G causing COVID-19. Global health agencies have debunked this conspiracy.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "keywords": [
+      "5g", "tower", "covid", "corona", "radiation covid",
+      "5g se corona", "5g corona spread", "5g nal corona",
+      "5g karone corona", "5g dwara covid"
+    ]
   },
   {
     "claim": "Cow urine cures cancer",
     "verdict": "FALSE",
-    "explanation": "There is no scientific evidence that cow urine can cure cancer. No peer-reviewed study supports this claim.",
-    "languages": ["hi", "en", "mr", "gu"],
-    "keywords": ["cow", "urine", "cancer", "गोमूत्र", "कैंसर", "गाय"]
+    "explanation": "No robust peer-reviewed evidence proves cow urine cures cancer.",
+    "languages": ["en", "hi", "mr", "gu", "kn", "ml", "ta", "te", "bn", "pa", "ur", "sa"],
+    "keywords": [
+      "cow urine", "gomutra", "gaumutra", "cancer cure", "cancer thik",
+      "gaay ka mutra", "gomutra ilaaj", "gomutra upchar", "go mutra chikitsa"
+    ]
   },
   {
     "claim": "WhatsApp messages can hack your phone just by opening them",
     "verdict": "MOSTLY_FALSE",
-    "explanation": "While specific vulnerabilities have existed in the past (and were patched), simply opening a regular WhatsApp text message does not hack your phone.",
-    "languages": ["hi", "en", "ta", "te", "bn"],
-    "keywords": ["WhatsApp", "hack", "phone", "virus", "वायरस", "हैक"]
-  },
-  {
-    "claim": "India's GDP growth rate is the highest in the world",
-    "verdict": "PARTIALLY_TRUE",
-    "explanation": "India has had periods of being the fastest-growing major economy, but this is not consistently true and depends on the time period and methodology used.",
-    "languages": ["hi", "en"],
-    "keywords": ["GDP", "growth", "India", "economy", "जीडीपी", "अर्थव्यवस्था"]
-  },
-  {
-    "claim": "Eating garlic prevents COVID-19",
-    "verdict": "FALSE",
-    "explanation": "WHO has confirmed there is no evidence that eating garlic protects against COVID-19. While garlic has some antimicrobial properties, it does not prevent coronavirus infection.",
-    "languages": ["hi", "en", "ta", "te", "bn", "mr"],
-    "keywords": ["garlic", "COVID", "corona", "prevent", "लहसुन", "கொரோனா"]
+    "explanation": "General message-opening claim is false; rare vulnerabilities existed historically but were patched.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "keywords": [
+      "whatsapp", "hack phone", "open message hack", "message se hack",
+      "whatsapp message hack", "forwarded link hack", "sms open hack"
+    ]
   },
   {
     "claim": "Indian government is implanting microchips through vaccines",
     "verdict": "FALSE",
-    "explanation": "This is a global conspiracy theory with no factual basis. Vaccines do not contain microchips. This claim has been debunked by health authorities worldwide.",
-    "languages": ["hi", "en", "ta", "te", "bn"],
-    "keywords": ["microchip", "vaccine", "government", "टीका", "माइक्रोचिप", "சிப்"]
+    "explanation": "No evidence supports microchips in vaccines. This is a global conspiracy narrative.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or", "ne"],
+    "keywords": [
+      "microchip vaccine", "chip in vaccine", "tracking chip", "government chip",
+      "teeka chip", "vaccine surveillance", "covid vaccine chip"
+    ]
   },
   {
-    "claim": "Love Jihad is an organized conspiracy",
+    "claim": "Eating garlic prevents COVID-19",
+    "verdict": "FALSE",
+    "explanation": "Garlic is nutritious but has no proven protective effect against COVID-19.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "keywords": [
+      "garlic covid", "lasun corona", "poondu corona", "lahsun cure",
+      "garlic prevents corona", "rasun covid"
+    ]
+  },
+  {
+    "claim": "Love Jihad is an organized nationwide conspiracy",
     "verdict": "UNVERIFIABLE",
-    "explanation": "Multiple investigations by Indian law enforcement agencies including NIA have found no evidence of an organized conspiracy. Individual cases of fraud exist across all communities.",
-    "languages": ["hi", "en", "ta", "te", "bn", "mr"],
-    "keywords": ["love jihad", "लव जिहाद", "conversion", "धर्मांतरण"]
+    "explanation": "Large-scale coordinated conspiracy evidence is not established in official investigations.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur"],
+    "keywords": [
+      "love jihad", "forced conversion conspiracy", "organized conversion",
+      "prem jihad", "dharm parivartan saazish"
+    ]
+  },
+  {
+    "claim": "A child-lifting gang is active in this area, do not trust outsiders",
+    "verdict": "MOSTLY_FALSE",
+    "explanation": "Frequent panic-forward hoax pattern; many such alerts are unverified and have triggered violence.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or", "ne"],
+    "keywords": [
+      "child lifter", "kidnap gang", "bachcha chor", "child kidnapping alert",
+      "share immediately child theft", "baby snatcher gang"
+    ]
+  },
+  {
+    "claim": "Doctors are harvesting organs from patients in local hospitals",
+    "verdict": "MOSTLY_FALSE",
+    "explanation": "Viral versions are generally unverified rumors; claims should be checked with official police and hospital statements.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "or"],
+    "keywords": [
+      "organ harvesting", "doctor organ theft", "hospital organ mafia",
+      "ang churana", "organ racket hospital"
+    ]
+  },
+  {
+    "claim": "Drinking hot water every 15 minutes kills coronavirus",
+    "verdict": "FALSE",
+    "explanation": "No evidence that periodic hot-water drinking can kill coronavirus in the body.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "keywords": [
+      "hot water kills corona", "garam pani corona", "warm water covid cure",
+      "every 15 minutes hot water", "upla pani corona"
+    ]
+  },
+  {
+    "claim": "Government is giving free money if you click this link and share OTP",
+    "verdict": "FALSE",
+    "explanation": "Common scam pattern using phishing links and OTP theft.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or", "ne", "sd"],
+    "keywords": [
+      "free money link", "government scheme link", "share otp", "bank kyc update",
+      "click to claim subsidy", "instant cash offer"
+    ]
+  },
+  {
+    "claim": "UNVERIFIED election result screenshots prove vote tampering",
+    "verdict": "UNVERIFIABLE",
+    "explanation": "Screenshots without provenance are weak evidence; official election authority releases are required.",
+    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "keywords": [
+      "vote tampering screenshot", "election hacking image", "booth rigging viral screenshot",
+      "ec result fake screenshot", "evm manipulation image"
+    ]
   }
 ]

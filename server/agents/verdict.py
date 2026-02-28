@@ -1,10 +1,5 @@
 from server.agents.base_agent import BaseAgent
-
-
-LANGUAGE_NAMES = {
-    "hi": "Hindi", "ta": "Tamil", "te": "Telugu",
-    "bn": "Bengali", "mr": "Marathi", "gu": "Gujarati", "en": "English"
-}
+from server.languages import get_language_name, normalize_language_code
 
 
 class VerdictAgent(BaseAgent):
@@ -43,7 +38,13 @@ class VerdictAgent(BaseAgent):
             f"MEDIA FORENSICS: {media_results}\n\n"
             f"CONTEXT & HISTORY: {context_results}\n\n"
             f"EXPERT VALIDATION: {expert_results}\n\n"
-            f"Provide your verdict as JSON per your instructions."
+            "Prioritize evidence quality as follows: "
+            "1) credible independent sources, "
+            "2) known-hoax database matches, "
+            "3) expert consistency confidence, "
+            "4) media manipulation signals. "
+            "If sources are weak or conflicting, reduce confidence.\n\n"
+            "Provide your verdict as JSON per your instructions."
         )
 
         response = await self._query(prompt)
@@ -59,8 +60,9 @@ class VerdictAgent(BaseAgent):
             }
 
         # Translate summary to original language if needed
+        original_language = normalize_language_code(original_language)
         if original_language != "en":
-            lang_name = LANGUAGE_NAMES.get(original_language, original_language)
+            lang_name = get_language_name(original_language)
             translate_prompt = (
                 f"Translate this fact-check summary to {lang_name}. "
                 f"Keep it clear and accessible:\n\n"

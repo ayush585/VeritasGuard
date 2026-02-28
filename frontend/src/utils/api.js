@@ -23,3 +23,10 @@ export async function getResult(verificationId) {
   const { data } = await api.get(`/result/${verificationId}`)
   return data
 }
+
+export async function fetchResultAudio(verificationId) {
+  const { data } = await api.get(`/result/${verificationId}/audio`, {
+    responseType: 'blob',
+  })
+  return data
+}

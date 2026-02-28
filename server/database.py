@@ -1,5 +1,7 @@
 import json
 import os
+import re
+import unicodedata
 from sqlalchemy import create_engine, Column, Integer, String, Text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
@@ -49,21 +51,45 @@ def seed_hoaxes():
 
 
 def search_hoaxes(text: str) -> list[dict]:
+    def normalize(value: str) -> str:
+        normalized = unicodedata.normalize("NFKC", str(value or "")).lower()
+        normalized = re.sub(r"[^\w\s]", " ", normalized, flags=re.UNICODE)
+        return re.sub(r"\s+", " ", normalized).strip()
+
+    def tokenize(value: str) -> set[str]:
+        return set(normalize(value).split())
+
     session = SessionLocal()
     try:
         results = []
         all_hoaxes = session.query(KnownHoax).all()
-        text_lower = text.lower()
+        text_normalized = normalize(text)
+        text_tokens = tokenize(text)
 
         for hoax in all_hoaxes:
             keywords = json.loads(hoax.keywords)
-            matches = sum(1 for kw in keywords if kw.lower() in text_lower)
-            if matches >= 2:
+            keyword_hits = 0
+            token_overlap_hits = 0
+            for kw in keywords:
+                kw_norm = normalize(kw)
+                if not kw_norm:
+                    continue
+                if kw_norm in text_normalized:
+                    keyword_hits += 1
+                    continue
+                kw_tokens = tokenize(kw_norm)
+                if kw_tokens and len(text_tokens.intersection(kw_tokens)) >= max(1, len(kw_tokens) // 2):
+                    token_overlap_hits += 1
+
+            matches = keyword_hits + token_overlap_hits
+            if matches >= 2 or (keyword_hits >= 1 and token_overlap_hits >= 1):
                 results.append({
                     "claim": hoax.claim,
                     "verdict": hoax.verdict,
                     "explanation": hoax.explanation,
-                    "match_score": matches / len(keywords) if keywords else 0
+                    "match_score": matches / len(keywords) if keywords else 0,
+                    "keyword_hits": keyword_hits,
+                    "token_overlap_hits": token_overlap_hits,
                 })
 
         results.sort(key=lambda x: x["match_score"], reverse=True)
