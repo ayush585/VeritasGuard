@@ -1,0 +1,300 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0a0a0f;
+  color: #e4e4e7;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: #71717a;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+}
+
+main {
+  flex: 1;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mode-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mode-toggle button {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid #27272a;
+  background: #18181b;
+  color: #a1a1aa;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.mode-toggle button.active {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+
+textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  background: #18181b;
+  color: #e4e4e7;
+  font-size: 1rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+
+input[type='file'] {
+  padding: 0.75rem;
+  border: 1px dashed #27272a;
+  border-radius: 8px;
+  background: #18181b;
+  color: #a1a1aa;
+}
+
+.submit {
+  padding: 0.75rem;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.submit:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Progress */
+.progress {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  background: #18181b;
+}
+
+.progress h3 {
+  font-size: 0.9rem;
+  color: #71717a;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  color: #52525b;
+  transition: color 0.3s;
+}
+
+.stage.done {
+  color: #22c55e;
+}
+
+.stage.active {
+  color: #8b5cf6;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #27272a;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+
+.stage.done .dot {
+  background: #22c55e;
+}
+
+.stage.active .dot {
+  background: #8b5cf6;
+  box-shadow: 0 0 8px #8b5cf6;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Result */
+.result {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid #27272a;
+  border-radius: 8px;
+  background: #18181b;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.verdict-badge {
+  align-self: center;
+  padding: 0.5rem 2rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.confidence {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: #a1a1aa;
+}
+
+.bar {
+  flex: 1;
+  height: 8px;
+  background: #27272a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.summary h4,
+.claims h4,
+.evidence h4 {
+  font-size: 0.85rem;
+  color: #71717a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.summary p {
+  line-height: 1.6;
+  color: #d4d4d8;
+}
+
+.summary.native {
+  padding: 1rem;
+  background: #1e1b2e;
+  border-radius: 6px;
+  border-left: 3px solid #8b5cf6;
+}
+
+.claims ul,
+.evidence ul {
+  padding-left: 1.25rem;
+}
+
+.claims li,
+.evidence li {
+  margin-bottom: 0.4rem;
+  line-height: 1.5;
+  color: #d4d4d8;
+}
+
+.raw {
+  font-size: 0.8rem;
+  color: #52525b;
+}
+
+.raw summary {
+  cursor: pointer;
+  padding: 0.5rem 0;
+}
+
+.raw pre {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: #0a0a0f;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.error {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #1c1017;
+  border: 1px solid #7f1d1d;
+  border-radius: 8px;
+  color: #fca5a5;
+}
+
+footer {
+  text-align: center;
+  padding: 2rem 0 1rem;
+  color: #3f3f46;
+  font-size: 0.85rem;
+}

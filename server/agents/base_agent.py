@@ -14,17 +14,19 @@ class BaseAgent(ABC):
     async def initialize(self):
         if self._initialized:
             return
+        # Try to create a Mistral agent via the beta API
         try:
-            agent = self.client.beta.agents.create(
+            agent = await asyncio.to_thread(
+                self.client.beta.agents.create,
                 name=self.name,
                 model=self.model,
-                instructions=self.get_instructions()
+                instructions=self.get_instructions(),
             )
             self.agent_id = agent.id
-            self._initialized = True
+            print(f"[{self.name}] Created Mistral agent: {self.agent_id}")
         except Exception as e:
-            print(f"[{self.name}] Failed to create agent, will use direct chat: {e}")
-            self._initialized = True
+            print(f"[{self.name}] Agent API unavailable, using direct chat: {e}")
+        self._initialized = True
 
     @abstractmethod
     def get_instructions(self) -> str:
@@ -38,20 +40,26 @@ class BaseAgent(ABC):
         await self.initialize()
         try:
             if self.agent_id:
-                response = await asyncio.to_thread(
-                    self.client.beta.agents.chat,
-                    agent_id=self.agent_id,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-            else:
-                response = await asyncio.to_thread(
-                    self.client.chat.complete,
-                    model=self.model,
-                    messages=[
-                        {"role": "system", "content": self.get_instructions()},
-                        {"role": "user", "content": prompt}
-                    ]
-                )
+                # Use the agents conversational endpoint
+                try:
+                    response = await asyncio.to_thread(
+                        self.client.beta.agents.chat,
+                        agent_id=self.agent_id,
+                        messages=[{"role": "user", "content": prompt}],
+                    )
+                    return response.choices[0].message.content
+                except Exception:
+                    pass  # fall through to direct chat
+
+            # Fallback: direct chat.complete with system prompt
+            response = await asyncio.to_thread(
+                self.client.chat.complete,
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": self.get_instructions()},
+                    {"role": "user", "content": prompt},
+                ],
+            )
             return response.choices[0].message.content
         except Exception as e:
             print(f"[{self.name}] Query error: {e}")

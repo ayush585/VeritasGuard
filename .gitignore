@@ -34,5 +34,6 @@ frontend/dist/
 Thumbs.db
 
 # Project docs (not needed in repo)
+CLAUDE.md
 VERITASGUARD_CLAUDE_CODE_CONTEXT.md
 VERITASGUARD_DETAILED_PROMPTS.md
