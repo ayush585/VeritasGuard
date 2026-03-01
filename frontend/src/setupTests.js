@@ -11,3 +11,9 @@ if (!global.URL.revokeObjectURL) {
 if (!window.HTMLMediaElement.prototype.play) {
   window.HTMLMediaElement.prototype.play = () => Promise.resolve()
 }
+
+if (!navigator.clipboard) {
+  navigator.clipboard = {
+    writeText: () => Promise.resolve(),
+  }
+}

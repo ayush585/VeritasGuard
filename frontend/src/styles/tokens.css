@@ -1,0 +1,67 @@
+:root {
+  --bg: #07111d;
+  --bg-2: #0b1a2d;
+  --surface: rgba(12, 24, 42, 0.94);
+  --surface-2: rgba(16, 31, 52, 0.93);
+  --line: #26405f;
+  --line-soft: #1f3550;
+  --text: #e6eef8;
+  --text-muted: #9fb2c8;
+  --accent: #1aa4a9;
+  --accent-2: #f08d4f;
+  --tone-success: #25b768;
+  --tone-warning: #d49d2c;
+  --tone-danger: #e06545;
+  --tone-neutral: #5f7f9f;
+  --radius: 14px;
+  --shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Noto Sans Devanagari', 'Noto Sans Tamil', 'Noto Sans Bengali', 'Noto Sans Telugu',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(900px 430px at 0% -14%, rgba(26, 164, 169, 0.22), transparent 72%),
+    radial-gradient(850px 360px at 100% 0%, rgba(240, 141, 79, 0.18), transparent 70%),
+    var(--bg);
+  color: var(--text);
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
