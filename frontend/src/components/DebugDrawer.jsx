@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { useGsapContext, gsap } from '../hooks/useGsapContext'
 
 function DebugDrawer({ result, debugPayload, loadingDebug }) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const scopeRef = useRef(null)
 
   const effectivePayload = useMemo(() => {
     if (debugPayload) return debugPayload
@@ -19,6 +21,15 @@ function DebugDrawer({ result, debugPayload, loadingDebug }) {
     }
   }, [debugPayload, result])
 
+  useGsapContext(
+    scopeRef,
+    () => {
+      if (!open) return
+      gsap.fromTo('.debug-body', { opacity: 0, height: 0 }, { opacity: 1, height: 'auto', duration: 0.26, ease: 'power2.out' })
+    },
+    [open]
+  )
+
   const copyBundle = async () => {
     if (!effectivePayload) return
     try {
@@ -31,7 +42,7 @@ function DebugDrawer({ result, debugPayload, loadingDebug }) {
   }
 
   return (
-    <section className="panel debug-drawer">
+    <section className="panel debug-drawer" ref={scopeRef}>
       <div className="debug-head">
         <h3>Debug Trace</h3>
         <div className="debug-actions">

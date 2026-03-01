@@ -1,4 +1,6 @@
+import { useRef } from 'react'
 import { prettyPercent } from '../lib/formatters'
+import { useGsapContext, gsap } from '../hooks/useGsapContext'
 import MetricChip from './MetricChip'
 import StatusPill from './StatusPill'
 
@@ -12,6 +14,9 @@ const VERDICT_TONES = {
 }
 
 function VerdictCard({ result, audioLoading, audioError, audioUrl, audioRef, onPlayAudio }) {
+  const cardRef = useRef(null)
+  const fillRef = useRef(null)
+
   if (!result) {
     return (
       <section className="panel verdict-empty">
@@ -24,8 +29,21 @@ function VerdictCard({ result, audioLoading, audioError, audioUrl, audioRef, onP
   const tone = VERDICT_TONES[result.verdict] || 'neutral'
   const confidenceWidth = `${Math.max(3, Math.round((result.confidence || 0) * 100))}%`
 
+  useGsapContext(
+    cardRef,
+    () => {
+      gsap.fromTo(
+        cardRef.current,
+        { opacity: 0.75, y: 8 },
+        { opacity: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform' }
+      )
+      gsap.fromTo(fillRef.current, { width: '0%' }, { width: confidenceWidth, duration: 0.45, ease: 'power2.out' })
+    },
+    [result.verdict, result.confidence]
+  )
+
   return (
-    <section className="panel verdict-card entering">
+    <section className="panel verdict-card entering" ref={cardRef}>
       <div className="verdict-head">
         <h3>Final Decision</h3>
         <StatusPill label={result.verdict || 'UNVERIFIABLE'} tone={tone} />
@@ -37,7 +55,7 @@ function VerdictCard({ result, audioLoading, audioError, audioUrl, audioRef, onP
           <strong>{prettyPercent(result.confidence)}</strong>
         </div>
         <div className="confidence-track">
-          <div className={`confidence-fill tone-${tone}`} style={{ width: confidenceWidth }} />
+          <div ref={fillRef} className={`confidence-fill tone-${tone}`} style={{ width: confidenceWidth }} />
         </div>
       </div>
 

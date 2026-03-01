@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useRef } from 'react'
 import { fetchResultAudio, getResult, getResultDebug, submitImage, submitText } from '../utils/api'
+import { useGsapContext, gsap } from '../hooks/useGsapContext'
 import InputModule from '../components/InputModule'
 import PipelinePanel from '../components/PipelinePanel'
 import VerdictCard from '../components/VerdictCard'
@@ -127,6 +128,43 @@ function VerifyPage({ navigate }) {
   const [state, dispatch] = useReducer(reducer, initialState)
   const pollRef = useRef(null)
   const audioRef = useRef(null)
+  const rootRef = useRef(null)
+
+  useGsapContext(
+    rootRef,
+    () => {
+      gsap
+        .timeline({ defaults: { duration: 0.38, ease: 'power2.out' } })
+        .from('.command-left > .panel', { y: 12, opacity: 0 })
+        .from('.command-center-col > .panel', { y: 10, opacity: 0, stagger: 0.08 }, '-=0.16')
+        .from('.command-right > .panel', { y: 10, opacity: 0, stagger: 0.08 }, '-=0.16')
+        .from('.debug-row > .panel', { y: 8, opacity: 0 }, '-=0.12')
+    },
+    []
+  )
+
+  useGsapContext(
+    rootRef,
+    () => {
+      if (!state.result) return
+      gsap.fromTo(
+        '.verdict-card',
+        { opacity: 0.75, y: 8 },
+        { opacity: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform' }
+      )
+      gsap.fromTo(
+        '.source-list li',
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, stagger: 0.05, duration: 0.26, ease: 'power2.out', clearProps: 'transform' }
+      )
+      gsap.fromTo(
+        '.votes-table tbody tr',
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, stagger: 0.04, duration: 0.22, ease: 'power1.out', clearProps: 'transform' }
+      )
+    },
+    [state.result?.verification_id]
+  )
 
   useEffect(
     () => () => {
@@ -260,7 +298,7 @@ function VerifyPage({ navigate }) {
   }
 
   return (
-    <div className="page verify-page">
+    <div className="page verify-page" ref={rootRef}>
       <header className="topbar">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true" />

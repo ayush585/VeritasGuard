@@ -1,6 +1,23 @@
+import { useRef } from 'react'
+import { useGsapContext, gsap } from '../hooks/useGsapContext'
+
 function LandingPage({ navigate }) {
+  const rootRef = useRef(null)
+
+  useGsapContext(
+    rootRef,
+    () => {
+      const tl = gsap.timeline({ defaults: { duration: 0.48, ease: 'power3.out' } })
+      tl.from('.hero', { y: 18, opacity: 0 })
+        .from('.impact-strip', { y: 16, opacity: 0 }, '-=0.26')
+        .from('.pipeline-showcase', { y: 16, opacity: 0 }, '-=0.26')
+        .from('.channel-cards .panel', { y: 14, opacity: 0, stagger: 0.08 }, '-=0.18')
+    },
+    []
+  )
+
   return (
-    <div className="page landing-page">
+    <div className="page landing-page" ref={rootRef}>
       <header className="topbar">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true" />

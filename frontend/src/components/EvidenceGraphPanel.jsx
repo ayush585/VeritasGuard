@@ -1,11 +1,27 @@
+import { useRef } from 'react'
+import { useGsapContext, gsap } from '../hooks/useGsapContext'
+
 function EvidenceGraphPanel({ result }) {
+  const scopeRef = useRef(null)
   const graph = result?.evidence_graph || {}
   const claimNodes = Array.isArray(graph.claim_nodes) ? graph.claim_nodes : []
   const evidenceNodes = Array.isArray(graph.evidence_nodes) ? graph.evidence_nodes : []
   const edges = Array.isArray(graph.edges) ? graph.edges : []
 
+  useGsapContext(
+    scopeRef,
+    () => {
+      gsap.fromTo(
+        '.graph-col',
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, stagger: 0.06, duration: 0.22, ease: 'power2.out', clearProps: 'transform' }
+      )
+    },
+    [result?.verification_id]
+  )
+
   return (
-    <section className="panel graph-panel">
+    <section className="panel graph-panel" ref={scopeRef}>
       <div className="panel-head compact">
         <h3>Evidence Graph</h3>
         <p>Claim-to-evidence contradiction/support map with decision path.</p>

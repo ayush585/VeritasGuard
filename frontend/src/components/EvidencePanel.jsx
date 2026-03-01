@@ -1,14 +1,29 @@
+import { useRef } from 'react'
 import { domainFromUrl, sourceLabel, summarizeWarnings } from '../lib/formatters'
+import { useGsapContext, gsap } from '../hooks/useGsapContext'
 import StatusPill from './StatusPill'
 
 function EvidencePanel({ result }) {
+  const scopeRef = useRef(null)
   const sources = Array.isArray(result?.top_sources) ? result.top_sources : []
   const warnings = summarizeWarnings(result?.warnings || [])
   const provider = sourceLabel(result?.search_provider)
   const isFallbackOnly = result?.search_provider === 'local_known_hoax_references'
 
+  useGsapContext(
+    scopeRef,
+    () => {
+      gsap.fromTo(
+        '.source-list li',
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, stagger: 0.05, duration: 0.24, ease: 'power2.out', clearProps: 'transform' }
+      )
+    },
+    [result?.verification_id, sources.length]
+  )
+
   return (
-    <section className="panel evidence-panel">
+    <section className="panel evidence-panel" ref={scopeRef}>
       <div className="panel-head compact">
         <h3>Evidence & Provenance</h3>
         <div className="head-pills">

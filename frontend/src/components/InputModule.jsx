@@ -1,3 +1,6 @@
+import { useRef } from 'react'
+import { useGsapContext, gsap } from '../hooks/useGsapContext'
+
 function InputModule({
   mode,
   onModeChange,
@@ -11,8 +14,22 @@ function InputModule({
   sampleCases,
   onUseSample,
 }) {
+  const scopeRef = useRef(null)
+
+  useGsapContext(
+    scopeRef,
+    () => {
+      gsap.fromTo(
+        '.input-module .field, .input-module .mode-switch, .input-module .sticky-actions',
+        { opacity: 0, y: 6 },
+        { opacity: 1, y: 0, stagger: 0.05, duration: 0.22, ease: 'power2.out', clearProps: 'transform' }
+      )
+    },
+    []
+  )
+
   return (
-    <section className="panel input-module entering" aria-label="Verification Input Module">
+    <section className="panel input-module entering" aria-label="Verification Input Module" ref={scopeRef}>
       <div className="panel-head">
         <h2>Run Live Verification</h2>
         <p>Paste or upload suspicious content. VeritasGuard will orchestrate multilingual verification agents.</p>
