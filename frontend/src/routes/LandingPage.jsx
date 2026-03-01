@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useGsapContext, gsap } from '../hooks/useGsapContext'
+import BrandLogo from '../components/BrandLogo'
 
 function LandingPage({ navigate }) {
   const rootRef = useRef(null)
@@ -19,13 +20,7 @@ function LandingPage({ navigate }) {
   return (
     <div className="page landing-page" ref={rootRef}>
       <header className="topbar">
-        <div className="brand-lockup">
-          <div className="brand-mark" aria-hidden="true" />
-          <div>
-            <strong>VeritasGuard</strong>
-            <span>Public-interest verification infrastructure</span>
-          </div>
-        </div>
+        <BrandLogo title="VeritasGuard" subtitle="Public-interest verification infrastructure" />
         <button className="btn btn-primary" type="button" onClick={() => navigate('/verify')}>
           Run Live Verification
         </button>

@@ -1,6 +1,19 @@
 import { useRef } from 'react'
 import { useGsapContext, gsap } from '../hooks/useGsapContext'
 
+function asText(value, fallback = 'n/a') {
+  if (value === null || value === undefined) return fallback
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return fallback
+    }
+  }
+  return fallback
+}
+
 function EvidenceGraphPanel({ result }) {
   const scopeRef = useRef(null)
   const graph = result?.evidence_graph || {}
@@ -37,7 +50,7 @@ function EvidenceGraphPanel({ result }) {
             <h4>Claim Nodes</h4>
             <ul>
               {claimNodes.map((node, idx) => (
-                <li key={`${node.id || 'claim'}-${idx}`}>{node.text || node.id || 'Claim'}</li>
+                <li key={`${node.id || 'claim'}-${idx}`}>{asText(node.text || node.id, 'Claim')}</li>
               ))}
             </ul>
           </div>
@@ -45,7 +58,7 @@ function EvidenceGraphPanel({ result }) {
             <h4>Evidence Nodes</h4>
             <ul>
               {evidenceNodes.slice(0, 6).map((node, idx) => (
-                <li key={`${node.id || 'ev'}-${idx}`}>{node.text || node.id || 'Evidence'}</li>
+                <li key={`${node.id || 'ev'}-${idx}`}>{asText(node.text || node.id, 'Evidence')}</li>
               ))}
             </ul>
           </div>
@@ -54,11 +67,11 @@ function EvidenceGraphPanel({ result }) {
             <ul>
               {edges.slice(0, 8).map((edge, idx) => (
                 <li key={`${edge.from || 'f'}-${edge.to || 't'}-${idx}`}>
-                  {edge.from || 'Claim'} -> {edge.to || 'Evidence'} ({edge.type || 'link'})
+                  {asText(edge.from, 'Claim')} {' -> '} {asText(edge.to, 'Evidence')} ({asText(edge.type, 'link')})
                 </li>
               ))}
             </ul>
-            <p className="decision-path">{graph.resolution || graph.final_decision_path || 'Decision path unavailable.'}</p>
+            <p className="decision-path">{asText(graph.resolution || graph.final_decision_path, 'Decision path unavailable.')}</p>
           </div>
         </div>
       )}

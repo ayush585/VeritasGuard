@@ -2,6 +2,19 @@ import { useRef } from 'react'
 import { prettyPercent, titleCase } from '../lib/formatters'
 import { useGsapContext, gsap } from '../hooks/useGsapContext'
 
+function asText(value, fallback = 'n/a') {
+  if (value === null || value === undefined) return fallback
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return fallback
+    }
+  }
+  return fallback
+}
+
 function meterValue(value) {
   const num = Number(value || 0)
   if (Number.isNaN(num)) return 0
@@ -51,10 +64,10 @@ function ConsensusPanel({ result }) {
             <tbody>
               {votes.map((vote, idx) => (
                 <tr key={`${vote.agent}-${idx}`}>
-                  <td>{vote.agent}</td>
-                  <td>{titleCase(vote.stance)}</td>
+                  <td>{asText(vote.agent)}</td>
+                  <td>{titleCase(asText(vote.stance, 'insufficient'))}</td>
                   <td>{prettyPercent(vote.confidence)}</td>
-                  <td>{vote.reason || 'n/a'}</td>
+                  <td>{asText(vote.reason)}</td>
                 </tr>
               ))}
             </tbody>
@@ -102,7 +115,7 @@ function ConsensusPanel({ result }) {
 
       <div className="consensus-footer">
         <span>Agent Agreement: {prettyPercent(consensus.agent_agreement_score)}</span>
-        <small>{consensus.decision_rule || 'Decision rule not available.'}</small>
+        <small>{asText(consensus.decision_rule, 'Decision rule not available.')}</small>
       </div>
     </section>
   )

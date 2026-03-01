@@ -13,9 +13,39 @@ const VERDICT_TONES = {
   FALSE: 'danger',
 }
 
+function asText(value, fallback = 'n/a') {
+  if (value === null || value === undefined) return fallback
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value)
+    } catch {
+      return fallback
+    }
+  }
+  return fallback
+}
+
 function VerdictCard({ result, audioLoading, audioError, audioUrl, audioRef, onPlayAudio }) {
   const cardRef = useRef(null)
   const fillRef = useRef(null)
+  const confidenceWidth = `${Math.max(3, Math.round((Number(result?.confidence || 0) || 0) * 100))}%`
+
+  useGsapContext(
+    cardRef,
+    () => {
+      if (!result) return
+      gsap.fromTo(
+        cardRef.current,
+        { opacity: 0.75, y: 8 },
+        { opacity: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform' }
+      )
+      gsap.fromTo(fillRef.current, { width: '0%' }, { width: confidenceWidth, duration: 0.45, ease: 'power2.out' })
+    },
+    [result?.verification_id, result?.verdict, result?.confidence]
+  )
 
   if (!result) {
     return (
@@ -27,26 +57,12 @@ function VerdictCard({ result, audioLoading, audioError, audioUrl, audioRef, onP
   }
 
   const tone = VERDICT_TONES[result.verdict] || 'neutral'
-  const confidenceWidth = `${Math.max(3, Math.round((result.confidence || 0) * 100))}%`
-
-  useGsapContext(
-    cardRef,
-    () => {
-      gsap.fromTo(
-        cardRef.current,
-        { opacity: 0.75, y: 8 },
-        { opacity: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform' }
-      )
-      gsap.fromTo(fillRef.current, { width: '0%' }, { width: confidenceWidth, duration: 0.45, ease: 'power2.out' })
-    },
-    [result.verdict, result.confidence]
-  )
 
   return (
     <section className="panel verdict-card entering" ref={cardRef}>
       <div className="verdict-head">
         <h3>Final Decision</h3>
-        <StatusPill label={result.verdict || 'UNVERIFIABLE'} tone={tone} />
+        <StatusPill label={asText(result.verdict, 'UNVERIFIABLE')} tone={tone} />
       </div>
 
       <div className="confidence-block" aria-label="Confidence score">
@@ -63,7 +79,7 @@ function VerdictCard({ result, audioLoading, audioError, audioUrl, audioRef, onP
         <div className="override-banner" role="status">
           <strong>Deterministic safety override applied.</strong>
           <span>
-            Reason: {result.override_reason || 'high-risk pattern'} | Match score: {result.override_match_score ?? '--'}
+            Reason: {asText(result.override_reason, 'high-risk pattern')} | Match score: {asText(result.override_match_score, '--')}
           </span>
         </div>
       )}
@@ -71,13 +87,13 @@ function VerdictCard({ result, audioLoading, audioError, audioUrl, audioRef, onP
       {result.native_summary && result.detected_language !== 'en' && (
         <article className="summary-block native">
           <h4>Summary ({String(result.detected_language || '').toUpperCase()})</h4>
-          <p>{result.native_summary}</p>
+          <p>{asText(result.native_summary, 'No native summary returned.')}</p>
         </article>
       )}
 
       <article className="summary-block">
         <h4>Summary (EN)</h4>
-        <p>{result.summary || 'No summary returned.'}</p>
+        <p>{asText(result.summary, 'No summary returned.')}</p>
       </article>
 
       <div className="metric-grid">
@@ -93,7 +109,7 @@ function VerdictCard({ result, audioLoading, audioError, audioUrl, audioRef, onP
         </button>
         {audioUrl && <audio ref={audioRef} src={audioUrl} controls preload="none" />}
         {audioError && <p className="inline-error">{audioError}</p>}
-        {result.audio_message && <small>{result.audio_message}</small>}
+        {result.audio_message && <small>{asText(result.audio_message, '')}</small>}
       </div>
     </section>
   )
