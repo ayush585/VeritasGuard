@@ -30,7 +30,7 @@ def seed_hoaxes():
     session = SessionLocal()
     try:
         data_path = os.path.join(os.path.dirname(__file__), "data", "known_hoaxes.json")
-        with open(data_path, "r", encoding="utf-8") as f:
+        with open(data_path, "r", encoding="utf-8-sig") as f:
             hoaxes = json.load(f)
 
         existing = {entry.claim: entry for entry in session.query(KnownHoax).all()}
