@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import httpx
 
 from server.agents.base_agent import BaseAgent
+from server.database import search_hoaxes
 
 
 TRUSTED_DOMAINS: dict[str, float] = {
@@ -140,6 +141,7 @@ class SourceVerificationAgent(BaseAgent):
             "snippet": snippet,
             "publisher": domain,
             "published_at": published_at,
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
             "credibility_tier": self._credibility_tier(domain),
             "stance": stance,
             "provider": provider,
@@ -268,89 +270,20 @@ class SourceVerificationAgent(BaseAgent):
             "Return citations with URLs and concise evidence notes.\n\n"
             f"CLAIM QUERY: {query}"
         )
-
-        primary_error: Exception | None = None
-        has_beta_conversations = (
-            hasattr(self.client, "beta")
-            and hasattr(getattr(self.client, "beta"), "conversations")
-            and hasattr(getattr(self.client.beta, "conversations"), "start")
-        )
-        if has_beta_conversations:
-            try:
-                response = await asyncio.to_thread(
-                    self.client.beta.conversations.start,
-                    model=self.model,
-                    inputs=search_prompt,
-                    tools=[{"type": "web_search"}],
-                )
-                text_parts: list[str] = []
-                refs: list[dict[str, Any]] = []
-                for event in getattr(response, "events", []) or []:
-                    if getattr(event, "type", "") != "message.output":
-                        continue
-                    content = getattr(event, "content", [])
-                    if isinstance(content, str):
-                        text_parts.append(content)
-                        continue
-                    for item in content or []:
-                        item_type = getattr(item, "type", "") or (
-                            item.get("type", "") if isinstance(item, dict) else ""
-                        )
-                        if item_type in {"text", "output_text"}:
-                            value = getattr(item, "text", None) or (
-                                item.get("text", "") if isinstance(item, dict) else ""
-                            )
-                            if value:
-                                text_parts.append(str(value))
-                        elif item_type in {"url_citation", "citation"}:
-                            refs.append(
-                                {
-                                    "title": str(
-                                        getattr(item, "title", None)
-                                        or (item.get("title", "Untitled") if isinstance(item, dict) else "Untitled")
-                                    ),
-                                    "url": str(
-                                        getattr(item, "url", None)
-                                        or (item.get("url", "") if isinstance(item, dict) else "")
-                                    ),
-                                    "snippet": str(
-                                        getattr(item, "content", None)
-                                        or (item.get("content", "") if isinstance(item, dict) else "")
-                                    ),
-                                }
-                            )
-                summary = "\n".join([part.strip() for part in text_parts if part and part.strip()])
-                refs = [r for r in refs if r.get("url")]
-                if not refs and summary:
-                    refs = self._parse_summary_urls(summary)
-                return refs, summary, None
-            except Exception as exc:
-                primary_error = exc
-        else:
-            primary_error = RuntimeError("Mistral beta conversations API unavailable in installed SDK.")
-
-        # Last resort: plain chat synthesis with URL extraction (no tool call).
+        # Adapter handles SDK variation and tool-support fallbacks.
         try:
-            response = await asyncio.to_thread(
-                self.client.chat.complete,
+            adapter_response = await self.adapter.run_chat(
                 model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": (
-                            "Provide up to 5 credible sources with direct URLs for verifying this claim. "
-                            "Prefer government, WHO, and established fact-check sites.\n\n"
-                            f"Claim: {query}"
-                        ),
-                    }
-                ],
+                messages=[{"role": "user", "content": search_prompt}],
+                tools=[{"type": "web_search"}],
             )
-            content = response.choices[0].message.content
-            summary = str(content or "")
-            refs = self._parse_summary_urls(summary)
+            summary = str(adapter_response.get("text", "") or "")
+            refs = adapter_response.get("citations", [])
+            if not refs and summary:
+                refs = self._parse_summary_urls(summary)
             return refs, summary, None
-        except Exception as secondary_error:
-            return [], "", f"Mistral web search unavailable ({primary_error}; fallback error: {secondary_error})"
+        except Exception as e:
+            return [], "", f"Mistral web search unavailable ({e})"
 
     async def _search_with_google(self, query: str) -> list[dict]:
         if not self.google_search_available:
@@ -420,6 +353,7 @@ class SourceVerificationAgent(BaseAgent):
         attempted: bool,
         results: list[dict[str, Any]] | None = None,
         warnings: list[str] | None = None,
+        evidence_completeness: str = "low",
     ) -> dict[str, Any]:
         return {
             "source_quality": "none",
@@ -431,7 +365,32 @@ class SourceVerificationAgent(BaseAgent):
             "search_results_count": len(results or []),
             "warnings": warnings or [],
             "source_score": 0.0,
+            "evidence_completeness": evidence_completeness,
         }
+
+    def _supplement_with_known_hoax_references(self, claim: str) -> list[dict[str, Any]]:
+        matches = search_hoaxes(claim)
+        if not matches:
+            return []
+        strongest = matches[0]
+        references = strongest.get("references", []) if isinstance(strongest, dict) else []
+        supplemented = []
+        for ref in references[:2]:
+            if not isinstance(ref, dict):
+                continue
+            normalized = self._normalize_source(
+                {
+                    "title": ref.get("title", "Known Hoax Reference"),
+                    "url": ref.get("url", ""),
+                    "snippet": ref.get("snippet", strongest.get("explanation", "")),
+                    "published_at": ref.get("published_at"),
+                },
+                provider="local_hoax_reference",
+            )
+            if normalized:
+                normalized["stance"] = "refutes"
+                supplemented.append(normalized)
+        return supplemented
 
     async def process(self, data: dict) -> dict:
         text = data.get("text", "")
@@ -537,6 +496,21 @@ class SourceVerificationAgent(BaseAgent):
             analysis = "No high-quality evidence retrieved from configured search providers."
             if summary_parts:
                 analysis = f"{analysis} Search summary: {' '.join(summary_parts)[:420]}"
+            supplements = self._supplement_with_known_hoax_references(main_claim)
+            if supplements:
+                provider = f"{provider}+local_hoax_reference" if provider != "mistral_web_search" else "local_hoax_reference"
+                analysis = (
+                    "External web retrieval returned insufficient evidence; supplemented with known-hoax "
+                    "curated references."
+                )
+                return self._default_response(
+                    analysis=analysis,
+                    provider=provider,
+                    attempted=search_attempted,
+                    warnings=warnings,
+                    results=supplements,
+                    evidence_completeness="medium",
+                )
             return self._default_response(
                 analysis=analysis,
                 provider=provider,
@@ -600,4 +574,12 @@ class SourceVerificationAgent(BaseAgent):
         result["search_results_count"] = len(final_sources)
         result["source_score"] = current_score["overall"]
         result["warnings"] = warnings
+        if len(final_sources) >= 3 and current_score["source_quality"] in {"high", "medium"}:
+            result["evidence_completeness"] = "high"
+        elif len(final_sources) >= 1:
+            result["evidence_completeness"] = "medium"
+            if len(final_sources) < 2:
+                warnings.append("Evidence completeness low: fewer than 2 unique sources.")
+        else:
+            result["evidence_completeness"] = "low"
         return result

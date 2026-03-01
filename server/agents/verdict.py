@@ -94,6 +94,8 @@ class VerdictAgent(BaseAgent):
         media_results = data.get("media_forensics", {})
         context_results = data.get("context_history", {})
         expert_results = data.get("expert_validation", {})
+        agent_votes = data.get("agent_votes", [])
+        consensus_breakdown = data.get("consensus_breakdown", {})
         original_text = data.get("original_text", "")
         original_language = data.get("original_language", "en")
 
@@ -109,11 +111,14 @@ class VerdictAgent(BaseAgent):
                 f"MEDIA FORENSICS: {media_results}\n\n"
                 f"CONTEXT & HISTORY: {context_results}\n\n"
                 f"EXPERT VALIDATION: {expert_results}\n\n"
+                f"AGENT VOTES: {agent_votes}\n\n"
+                f"WEIGHTED CONSENSUS: {consensus_breakdown}\n\n"
                 "Prioritize evidence quality as follows: "
                 "1) credible independent sources, "
                 "2) known-hoax database matches, "
                 "3) expert consistency confidence, "
                 "4) media manipulation signals. "
+                "If agents disagree, explain conflict resolution explicitly in summary and key_evidence. "
                 "If sources are weak or conflicting, reduce confidence.\n\n"
                 "Provide your verdict as JSON per your instructions."
             )

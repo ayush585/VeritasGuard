@@ -123,6 +123,7 @@ async def run_test(client: httpx.AsyncClient, case: dict, timeout_seconds: int) 
             print(f"  RESULT: {verdict} (confidence: {confidence:.0%})")
             print(f"  DETECTED LANG: {lang}")
             print(f"  SEARCH: {data.get('search_provider', 'n/a')} ({data.get('search_results_count', 0)} results)")
+            print(f"  EVIDENCE COMPLETENESS: {data.get('evidence_completeness', 'n/a')}")
             print(f"  AUDIO: {data.get('audio_status', 'n/a')}")
             print(f"  SUMMARY: {data.get('summary', 'N/A')[:220]}")
             if data.get("native_summary"):

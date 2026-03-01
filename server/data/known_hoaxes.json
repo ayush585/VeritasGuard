@@ -1,8 +1,18 @@
-﻿[
+[
   {
     "claim": "Muslims are poisoning water supplies",
     "verdict": "FALSE",
     "explanation": "Recurring communal hoax with no credible evidence. Variants have been debunked by multiple Indian fact-checkers.",
+    "references": [
+      {
+        "title": "Alt News - False communal rumours fact-check",
+        "url": "https://www.altnews.in/"
+      },
+      {
+        "title": "PIB Fact Check",
+        "url": "https://pib.gov.in/PressReleasePage.aspx?PRID=1932598"
+      }
+    ],
     "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
     "keywords": [
       "muslim", "poison", "water", "water supply", "drink water",
@@ -15,6 +25,16 @@
     "claim": "5G towers cause COVID-19",
     "verdict": "FALSE",
     "explanation": "No scientific evidence supports 5G causing COVID-19. Global health agencies have debunked this conspiracy.",
+    "references": [
+      {
+        "title": "WHO - Mythbusters",
+        "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters"
+      },
+      {
+        "title": "Reuters Fact Check - 5G and COVID",
+        "url": "https://www.reuters.com/fact-check/"
+      }
+    ],
     "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
     "keywords": [
       "5g", "tower", "covid", "corona", "radiation covid",
@@ -37,6 +57,16 @@
     "claim": "WhatsApp messages can hack your phone just by opening them",
     "verdict": "MOSTLY_FALSE",
     "explanation": "General message-opening claim is false; rare vulnerabilities existed historically but were patched.",
+    "references": [
+      {
+        "title": "WhatsApp Security Advisories",
+        "url": "https://www.whatsapp.com/security/advisories"
+      },
+      {
+        "title": "CERT-In advisories",
+        "url": "https://www.cert-in.org.in/"
+      }
+    ],
     "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
     "keywords": [
       "whatsapp", "hack phone", "open message hack", "message se hack",
@@ -48,6 +78,16 @@
     "claim": "Indian government is implanting microchips through vaccines",
     "verdict": "FALSE",
     "explanation": "No evidence supports microchips in vaccines. This is a global conspiracy narrative.",
+    "references": [
+      {
+        "title": "WHO - Vaccine misinformation",
+        "url": "https://www.who.int/news-room/feature-stories/detail/vaccine-misinformation-management-field-guide"
+      },
+      {
+        "title": "CDC - Vaccine myths",
+        "url": "https://www.cdc.gov/vaccines/parents/why-vaccinate/vaccine-decision.html"
+      }
+    ],
     "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or", "ne"],
     "keywords": [
       "microchip vaccine", "chip in vaccine", "tracking chip", "government chip",
@@ -60,6 +100,16 @@
     "claim": "Eating garlic prevents COVID-19",
     "verdict": "FALSE",
     "explanation": "Garlic is nutritious but has no proven protective effect against COVID-19.",
+    "references": [
+      {
+        "title": "WHO Mythbusters - Garlic",
+        "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters"
+      },
+      {
+        "title": "PIB Fact Check",
+        "url": "https://pib.gov.in/factcheck.aspx"
+      }
+    ],
     "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
     "keywords": [
       "garlic covid", "lasun corona", "poondu corona", "lahsun cure",
@@ -101,6 +151,16 @@
     "claim": "Drinking hot water every 15 minutes kills coronavirus",
     "verdict": "FALSE",
     "explanation": "No evidence that periodic hot-water drinking can kill coronavirus in the body.",
+    "references": [
+      {
+        "title": "WHO Mythbusters - Hot bath/hot water claims",
+        "url": "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters"
+      },
+      {
+        "title": "Ministry of Health and Family Welfare India",
+        "url": "https://www.mohfw.gov.in/"
+      }
+    ],
     "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
     "keywords": [
       "hot water kills corona", "garam pani corona", "warm water covid cure",

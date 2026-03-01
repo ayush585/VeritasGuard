@@ -33,6 +33,11 @@ class VerificationResult(BaseModel):
     latency_ms_by_stage: Optional[dict[str, int]] = None
     search_provider: Optional[str] = None
     search_results_count: Optional[int] = None
+    top_sources: Optional[list[dict]] = None
+    evidence_completeness: Optional[str] = None
+    agent_votes: Optional[list[dict]] = None
+    consensus_breakdown: Optional[dict] = None
+    evidence_graph: Optional[dict] = None
     deterministic_override_applied: Optional[bool] = None
     override_reason: Optional[str] = None
     override_match_score: Optional[float] = None

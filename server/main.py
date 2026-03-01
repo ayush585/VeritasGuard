@@ -22,6 +22,8 @@ from server.orchestrator import (
     verify_image_text,
     verify_text,
 )
+from server.utils.mistral_adapter import MistralAdapter
+from server.utils.twilio_client import send_whatsapp_message
 
 WHATSAPP_ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
 WHATSAPP_MEDIA_MAX_BYTES = int(os.getenv("WHATSAPP_MEDIA_MAX_BYTES", str(4 * 1024 * 1024)))
@@ -36,62 +38,29 @@ WHATSAPP_VALIDATE_SIGNATURE = os.getenv("WHATSAPP_VALIDATE_SIGNATURE", "true").s
     "on",
 }
 _whatsapp_rate_limit: dict[str, list[float]] = {}
+_whatsapp_jobs: dict[str, dict] = {}
 
 
 async def _extract_text_with_mistral_ocr(contents: bytes, mime_type: str) -> tuple[str, dict]:
     from server.utils.mistral_client import get_mistral_client
 
     client = get_mistral_client()
+    adapter = MistralAdapter(client)
     b64 = base64.b64encode(contents).decode()
     data_url = f"data:{mime_type};base64,{b64}"
-
-    # Prefer dedicated OCR API if available.
-    if hasattr(client, "ocr") and hasattr(client.ocr, "process"):
-        try:
-            response = await asyncio.to_thread(
-                client.ocr.process,
-                model="mistral-ocr-latest",
-                document={"type": "image_url", "image_url": data_url},
-            )
-            pages = getattr(response, "pages", None)
-            if pages is None and isinstance(response, dict):
-                pages = response.get("pages", [])
-            extracted_parts = []
-            for page in pages or []:
-                markdown = getattr(page, "markdown", None)
-                if markdown is None and isinstance(page, dict):
-                    markdown = page.get("markdown", "")
-                if markdown:
-                    extracted_parts.append(str(markdown).strip())
-            extracted = "\n\n".join(part for part in extracted_parts if part)
-            if extracted.strip():
-                return extracted.strip(), {"provider": "mistral_ocr", "method": "ocr.process"}
-        except Exception as e:
-            print(f"[Mistral OCR] Failed: {e}")
-
-    # Fallback to vision completion for extraction.
     try:
-        response = await asyncio.to_thread(
-            client.chat.complete,
-            model="pixtral-large-latest",
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "image_url", "image_url": {"url": data_url}},
-                        {
-                            "type": "text",
-                            "text": "Extract ALL text visible in this image. Return only extracted text.",
-                        },
-                    ],
-                }
-            ],
+        ocr_response = await adapter.run_ocr_image(
+            data_url=data_url,
+            ocr_model="mistral-ocr-latest",
+            vision_model="pixtral-large-latest",
         )
-        extracted_text = response.choices[0].message.content
+        extracted_text = ocr_response.get("text", "")
         if extracted_text and str(extracted_text).strip():
-            return str(extracted_text).strip(), {"provider": "pixtral_vision", "method": "chat.complete"}
+            provider = "mistral_ocr" if adapter.capabilities.ocr_process else "pixtral_vision"
+            method = "adapter.run_ocr_image"
+            return str(extracted_text).strip(), {"provider": provider, "method": method}
     except Exception as e:
-        print(f"[Pixtral OCR fallback] Failed: {e}")
+        print(f"[Mistral OCR adapter] Failed: {e}")
 
     return "", {"provider": "none", "method": "unavailable"}
 
@@ -174,6 +143,59 @@ async def _wait_for_result(verification_id: str, timeout_seconds: float) -> dict
             return result
         await asyncio.sleep(0.5)
     return None
+
+
+def _build_whatsapp_final_message(result: dict) -> str:
+    verdict = result.get("verdict", "UNVERIFIABLE")
+    confidence = float(result.get("confidence", 0.0) or 0.0)
+    summary = (result.get("native_summary") or result.get("summary") or "No summary available.").strip()
+    top_sources = result.get("top_sources", [])
+    source_lines = []
+    if isinstance(top_sources, list):
+        for idx, item in enumerate(top_sources[:2], start=1):
+            if not isinstance(item, dict):
+                continue
+            url = str(item.get("url", "")).strip()
+            if not url:
+                continue
+            source_lines.append(f"{idx}. {url}")
+    agreement = None
+    consensus = result.get("consensus_breakdown", {})
+    if isinstance(consensus, dict):
+        agreement = consensus.get("agent_agreement_score")
+    response_text = (
+        f"VeritasGuard Verdict: {verdict} ({confidence:.0%})\n"
+        f"{summary}\n"
+        f"Search: {result.get('search_provider', 'n/a')} ({result.get('search_results_count', 0)} sources)"
+    )
+    if agreement is not None:
+        try:
+            response_text += f"\nAgent agreement: {float(agreement):.0%}"
+        except (TypeError, ValueError):
+            pass
+    if source_lines:
+        response_text += "\nSources:\n" + "\n".join(source_lines)
+    return response_text
+
+
+async def _finalize_whatsapp_job(job_id: str):
+    job = _whatsapp_jobs.get(job_id)
+    if not job:
+        return
+    verification_id = job["verification_id"]
+    sender = job["sender"]
+    result = await _wait_for_result(verification_id, WHATSAPP_MAX_WAIT_SECONDS + 8)
+    if not result or result.get("status") != "completed":
+        body = (
+            f"Still analyzing your message. Verification ID: {verification_id}. "
+            "Please send 'status' with this ID in demo mode if needed."
+        )
+    else:
+        body = _build_whatsapp_final_message(result)
+    ok, info = await send_whatsapp_message(to_number=sender, body=body)
+    job["sent"] = ok
+    job["final_message_sid"] = info if ok else ""
+    job["send_error"] = "" if ok else info
 
 
 @asynccontextmanager
@@ -281,6 +303,7 @@ async def whatsapp_webhook(request: Request):
         return _twiml_message("Please send a text or image to verify.")
 
     verification_id = str(uuid.uuid4())
+    inbound_sid = params.get("MessageSid", "")
 
     if num_media > 0:
         account_sid = params.get("AccountSid", "")
@@ -329,22 +352,20 @@ async def whatsapp_webhook(request: Request):
                 return _twiml_message(media_error or "Unsupported or unreadable media. Send a clear image or text.")
     else:
         await verify_text(body, verification_id=verification_id)
+    job_id = str(uuid.uuid4())
+    _whatsapp_jobs[job_id] = {
+        "sender": sender,
+        "verification_id": verification_id,
+        "inbound_message_sid": inbound_sid,
+        "created_at": time.time(),
+        "sent": False,
+    }
+    asyncio.create_task(_finalize_whatsapp_job(job_id))
 
-    result = await _wait_for_result(verification_id, WHATSAPP_MAX_WAIT_SECONDS)
-    if not result or result.get("status") != "completed":
-        return _twiml_message(
-            f"Analyzing your message. Verification ID: {verification_id}. Please check back in a few seconds."
-        )
-
-    verdict = result.get("verdict", "UNVERIFIABLE")
-    confidence = float(result.get("confidence", 0.0) or 0.0)
-    summary = (result.get("native_summary") or result.get("summary") or "No summary available.").strip()
-    response_text = (
-        f"VeritasGuard Verdict: {verdict} ({confidence:.0%})\n"
-        f"{summary}\n"
-        f"Search: {result.get('search_provider', 'n/a')} ({result.get('search_results_count', 0)} sources)"
+    return _twiml_message(
+        f"Analyzing your message now... Verification ID: {verification_id}. "
+        "You will receive the final verdict shortly."
     )
-    return _twiml_message(response_text)
 
 
 @app.get("/result/{verification_id}")
@@ -353,6 +374,32 @@ async def get_result_endpoint(verification_id: str):
     if result is None:
         raise HTTPException(status_code=404, detail="Verification not found")
     return JSONResponse(result)
+
+
+@app.get("/result/{verification_id}/debug")
+async def get_result_debug_endpoint(verification_id: str):
+    result = get_result(verification_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Verification not found")
+    debug_payload = {
+        "verification_id": verification_id,
+        "trace_id": result.get("trace_id"),
+        "status": result.get("status"),
+        "stage": result.get("stage"),
+        "warnings": result.get("warnings", []),
+        "agent_errors": result.get("agent_errors", {}),
+        "stage_timings": result.get("stage_timings", {}),
+        "latency_ms_by_stage": result.get("latency_ms_by_stage", {}),
+        "search_provider": result.get("search_provider", "none"),
+        "search_results_count": result.get("search_results_count", 0),
+        "agent_votes": result.get("agent_votes", []),
+        "consensus_breakdown": result.get("consensus_breakdown", {}),
+        "evidence_completeness": result.get("evidence_completeness", "low"),
+        "deterministic_override_applied": result.get("deterministic_override_applied", False),
+        "override_reason": result.get("override_reason"),
+        "override_match_score": result.get("override_match_score"),
+    }
+    return JSONResponse(debug_payload)
 
 
 @app.get("/result/{verification_id}/audio")

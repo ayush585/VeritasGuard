@@ -2,6 +2,7 @@ import asyncio
 import os
 from abc import ABC, abstractmethod
 from server.utils.mistral_client import get_mistral_client, parse_json_safe
+from server.utils.mistral_adapter import MistralAdapter
 
 
 class BaseAgent(ABC):
@@ -9,24 +10,14 @@ class BaseAgent(ABC):
         self.name = name
         self.model = model
         self.client = get_mistral_client()
-        self.agent_id = None
+        self.adapter = MistralAdapter(self.client)
         self._initialized = False
 
     async def initialize(self):
         if self._initialized:
             return
-        # Try to create a Mistral agent via the beta API
-        try:
-            agent = await asyncio.to_thread(
-                self.client.beta.agents.create,
-                name=self.name,
-                model=self.model,
-                instructions=self.get_instructions(),
-            )
-            self.agent_id = agent.id
-            print(f"[{self.name}] Created Mistral agent: {self.agent_id}")
-        except Exception as e:
-            print(f"[{self.name}] Agent API unavailable, using direct chat: {e}")
+        capabilities = self.adapter.capability_summary()
+        print(f"[{self.name}] Adapter capabilities: {capabilities}")
         self._initialized = True
 
     @abstractmethod
@@ -47,36 +38,13 @@ class BaseAgent(ABC):
 
         for attempt in range(max_retries + 1):
             try:
-                if self.agent_id:
-                    # Use the agents conversational endpoint
-                    try:
-                        response = await asyncio.to_thread(
-                            self.client.beta.agents.chat,
-                            agent_id=self.agent_id,
-                            messages=[{"role": "user", "content": prompt}],
-                        )
-                        return response.choices[0].message.content
-                    except Exception:
-                        pass  # fall through to direct chat
-
-                # Fallback: direct chat.complete with system prompt
-                try:
-                    response = await asyncio.to_thread(
-                        self.client.chat.complete,
-                        model=self.model,
-                        messages=[{"role": "user", "content": prompt}],
-                    )
-                    return response.choices[0].message.content
-                except Exception:
-                    response = await asyncio.to_thread(
-                        self.client.chat.complete,
-                        model=self.model,
-                        messages=[
-                            {"role": "system", "content": self.get_instructions()},
-                            {"role": "user", "content": prompt},
-                        ],
-                    )
-                    return response.choices[0].message.content
+                response = await self.adapter.run_agent_chat(
+                    name=self.name,
+                    model=self.model,
+                    instructions=self.get_instructions(),
+                    user_prompt=prompt,
+                )
+                return str(response.get("text", "") or "")
             except Exception as e:
                 error_text = str(e)
                 is_rate_limit = "Status 429" in error_text or "rate_limited" in error_text.lower()

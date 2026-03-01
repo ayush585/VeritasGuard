@@ -45,13 +45,13 @@ def _load_float_env(name: str, default: float) -> float:
 PIPELINE_DEADLINE_SECONDS = _load_float_env("PIPELINE_DEADLINE_SECONDS", 12.0)
 STAGE_BUDGETS = {
     "language_detection": _load_float_env("STAGE_BUDGET_LANGUAGE_SECONDS", 0.8),
-    "translation": _load_float_env("STAGE_BUDGET_TRANSLATION_SECONDS", 1.5),
-    "claim_extraction": _load_float_env("STAGE_BUDGET_CLAIM_SECONDS", 1.5),
-    "verification": _load_float_env("STAGE_BUDGET_VERIFICATION_SECONDS", 4.0),
+    "translation": _load_float_env("STAGE_BUDGET_TRANSLATION_SECONDS", 1.2),
+    "claim_extraction": _load_float_env("STAGE_BUDGET_CLAIM_SECONDS", 1.2),
+    "verification": _load_float_env("STAGE_BUDGET_VERIFICATION_SECONDS", 7.0),
     "verdict": _load_float_env("STAGE_BUDGET_VERDICT_SECONDS", 1.0),
 }
 OPTIONAL_AGENT_TIMEOUTS = {
-    "source_verification": _load_float_env("STAGE_BUDGET_SOURCE_SECONDS", 4.0),
+    "source_verification": _load_float_env("STAGE_BUDGET_SOURCE_SECONDS", 8.0),
     "media_forensics": _load_float_env("STAGE_BUDGET_MEDIA_SECONDS", 2.0),
     "context_history": _load_float_env("STAGE_BUDGET_CONTEXT_SECONDS", 1.2),
     "expert_validation": _load_float_env("STAGE_BUDGET_EXPERT_SECONDS", 1.5),
@@ -107,6 +107,24 @@ def _warn(result: dict[str, Any], message: str):
     warnings = result.setdefault("warnings", [])
     if message not in warnings:
         warnings.append(message)
+
+
+def _cache_key(text: str, language: str, input_type: str) -> str:
+    return f"{input_type}:{language}:{text.strip().lower()[:512]}"
+
+
+def _cache_get(key: str) -> dict[str, Any] | None:
+    entry = claim_cache.get(key)
+    if not entry:
+        return None
+    if time.time() > entry.get("expires_at", 0):
+        claim_cache.pop(key, None)
+        return None
+    return entry.get("value")
+
+
+def _cache_set(key: str, value: dict[str, Any]):
+    claim_cache[key] = {"expires_at": time.time() + CLAIM_CACHE_TTL_SECONDS, "value": value}
 
 
 def _record_agent_error(result: dict[str, Any], agent_name: str, error: Exception | str):
@@ -179,6 +197,196 @@ def _fallback_verdict_from_context(parallel_results: dict[str, Any], original_la
     }
 
 
+def _extract_agent_votes(parallel_results: dict[str, Any]) -> list[dict[str, Any]]:
+    votes: list[dict[str, Any]] = []
+    source = parallel_results.get("source_verification", {})
+    if isinstance(source, dict) and not source.get("error"):
+        consensus = str(source.get("consensus", "insufficient"))
+        stance_map = {"refutes": "refutes", "supports": "supports", "mixed": "mixed", "insufficient": "insufficient"}
+        votes.append(
+            {
+                "agent": "source_verification",
+                "stance": stance_map.get(consensus, "insufficient"),
+                "confidence": round(float(source.get("source_score", 0.35) or 0.35), 3),
+                "reason": str(source.get("analysis", "Source consensus analysis"))[:180],
+            }
+        )
+
+    context = parallel_results.get("context_history", {})
+    if isinstance(context, dict) and not context.get("error"):
+        known = bool(context.get("known_hoax_match"))
+        confidence = float(context.get("match_confidence", 0.3) or 0.3)
+        votes.append(
+            {
+                "agent": "context_history",
+                "stance": "refutes" if known else "insufficient",
+                "confidence": round(confidence, 3),
+                "reason": str(context.get("historical_context", "Historical pattern analysis"))[:180],
+            }
+        )
+
+    expert = parallel_results.get("expert_validation", {})
+    if isinstance(expert, dict) and not expert.get("error"):
+        verdict = str(expert.get("expert_verdict", "UNVERIFIABLE")).upper()
+        if verdict in {"FALSE", "MOSTLY_FALSE"}:
+            stance = "refutes"
+        elif verdict in {"TRUE", "MOSTLY_TRUE"}:
+            stance = "supports"
+        elif verdict == "PARTIALLY_TRUE":
+            stance = "mixed"
+        else:
+            stance = "insufficient"
+        votes.append(
+            {
+                "agent": "expert_validation",
+                "stance": stance,
+                "confidence": round(float(expert.get("confidence", 0.35) or 0.35), 3),
+                "reason": str(expert.get("reasoning", "Expert domain validation"))[:180],
+            }
+        )
+
+    media = parallel_results.get("media_forensics", {})
+    if isinstance(media, dict) and not media.get("error"):
+        credibility = float(media.get("credibility_score", 0.5) or 0.5)
+        stance = "refutes" if credibility < 0.4 else "supports" if credibility > 0.7 else "mixed"
+        votes.append(
+            {
+                "agent": "media_forensics",
+                "stance": stance,
+                "confidence": round(abs(0.5 - credibility) + 0.3, 3),
+                "reason": str(media.get("analysis", "Media integrity analysis"))[:180],
+            }
+        )
+    return votes
+
+
+def _compute_consensus_breakdown(agent_votes: list[dict[str, Any]]) -> dict[str, Any]:
+    weights = {
+        "source_verification": 0.35,
+        "context_history": 0.30,
+        "expert_validation": 0.20,
+        "media_forensics": 0.15,
+    }
+    active = [vote for vote in agent_votes if vote.get("stance") in {"supports", "refutes", "mixed", "insufficient"}]
+    if not active:
+        return {
+            "weighted_refute": 0.0,
+            "weighted_support": 0.0,
+            "weighted_uncertain": 1.0,
+            "decision_rule": "No agent evidence available.",
+            "agent_agreement_score": 0.0,
+        }
+
+    total_weight = sum(weights.get(vote["agent"], 0.1) for vote in active)
+    weighted_refute = 0.0
+    weighted_support = 0.0
+    weighted_uncertain = 0.0
+    for vote in active:
+        norm_weight = weights.get(vote["agent"], 0.1) / max(total_weight, 0.0001)
+        stance = vote["stance"]
+        if stance == "refutes":
+            weighted_refute += norm_weight
+        elif stance == "supports":
+            weighted_support += norm_weight
+        else:
+            weighted_uncertain += norm_weight
+
+    decisive = weighted_refute + weighted_support
+    agreement = 0.0 if decisive <= 0 else max(weighted_refute, weighted_support) / decisive
+    return {
+        "weighted_refute": round(weighted_refute, 3),
+        "weighted_support": round(weighted_support, 3),
+        "weighted_uncertain": round(weighted_uncertain, 3),
+        "decision_rule": "Weighted consensus across source/context/expert/media agents.",
+        "agent_agreement_score": round(agreement, 3),
+    }
+
+
+def _build_evidence_graph(
+    *,
+    claim_text: str,
+    source_result: dict[str, Any],
+    context_result: dict[str, Any],
+    expert_result: dict[str, Any],
+    final_verdict: str,
+) -> dict[str, Any]:
+    claim_node = {"id": "claim_1", "text": claim_text[:300], "type": "claim"}
+    evidence_nodes = []
+    support_edges = []
+    contradiction_edges = []
+    idx = 1
+    for src in source_result.get("supporting_sources", []) if isinstance(source_result, dict) else []:
+        if not isinstance(src, dict):
+            continue
+        node_id = f"ev_{idx}"
+        idx += 1
+        stance = src.get("stance", "neutral")
+        evidence_nodes.append(
+            {
+                "id": node_id,
+                "type": "source",
+                "title": src.get("title", ""),
+                "url": src.get("url", ""),
+                "stance": stance,
+            }
+        )
+        if stance == "refutes":
+            contradiction_edges.append({"from": node_id, "to": "claim_1", "relation": "contradicts"})
+        elif stance == "supports":
+            support_edges.append({"from": node_id, "to": "claim_1", "relation": "supports"})
+
+    if isinstance(context_result, dict) and context_result.get("known_hoax_match"):
+        node_id = f"ev_{idx}"
+        evidence_nodes.append(
+            {
+                "id": node_id,
+                "type": "context",
+                "title": "Known hoax database match",
+                "url": "",
+                "stance": "refutes",
+            }
+        )
+        contradiction_edges.append({"from": node_id, "to": "claim_1", "relation": "contradicts"})
+        idx += 1
+
+    if isinstance(expert_result, dict):
+        verdict = str(expert_result.get("expert_verdict", "")).upper()
+        if verdict:
+            node_id = f"ev_{idx}"
+            stance = "refutes" if verdict in {"FALSE", "MOSTLY_FALSE"} else "supports" if verdict in {"TRUE", "MOSTLY_TRUE"} else "mixed"
+            evidence_nodes.append(
+                {
+                    "id": node_id,
+                    "type": "expert",
+                    "title": "Expert validation signal",
+                    "url": "",
+                    "stance": stance,
+                }
+            )
+            if stance == "refutes":
+                contradiction_edges.append({"from": node_id, "to": "claim_1", "relation": "contradicts"})
+            elif stance == "supports":
+                support_edges.append({"from": node_id, "to": "claim_1", "relation": "supports"})
+
+    resolution = {
+        "verdict": final_verdict,
+        "path": (
+            "Contradictory evidence outweighed supporting evidence."
+            if final_verdict in {"FALSE", "MOSTLY_FALSE"}
+            else "Supporting evidence outweighed contradictory evidence."
+            if final_verdict in {"TRUE", "MOSTLY_TRUE"}
+            else "Evidence remained mixed or insufficient."
+        ),
+    }
+    return {
+        "claim_nodes": [claim_node],
+        "evidence_nodes": evidence_nodes,
+        "support_edges": support_edges,
+        "contradiction_edges": contradiction_edges,
+        "final_decision_path": resolution,
+    }
+
+
 async def initialize_agents():
     """Initialize all agents on startup."""
     _try_load_optional_agents()
@@ -202,6 +410,7 @@ async def verify_text(
     """Run the full verification pipeline on input text."""
     vid = verification_id or str(uuid.uuid4())
     created_at = datetime.utcnow().isoformat()
+    trace_id = f"trace_{vid[:8]}"
     results_store[vid] = {
         "verification_id": vid,
         "status": "processing",
@@ -218,6 +427,7 @@ async def verify_text(
         "audio_available": False,
         "audio_status": "pending",
         "audio_message": "Audio generation not started.",
+        "trace_id": trace_id,
         "_pipeline_start_perf": time.perf_counter(),
         "_pipeline_deadline_perf": time.perf_counter() + PIPELINE_DEADLINE_SECONDS,
     }
@@ -278,6 +488,16 @@ async def _run_pipeline(
         result["_pipeline_start_perf"] = time.perf_counter()
         result["_pipeline_deadline_perf"] = time.perf_counter() + PIPELINE_DEADLINE_SECONDS
     try:
+        cache_key = _cache_key(text, "unknown", input_type)
+        cached_result = _cache_get(cache_key)
+        if cached_result:
+            result.update(cached_result)
+            result["status"] = "completed"
+            result["stage"] = "done"
+            result["cached"] = True
+            result["completed_at"] = datetime.utcnow().isoformat()
+            return
+
         # Stage 1: Language detection
         stage_start = _mark_stage_start(result, "language_detection")
         try:
@@ -291,6 +511,7 @@ async def _run_pipeline(
             detected_lang = "en"
         result["detected_language"] = detected_lang
         result["language_result"] = lang_result
+        cache_key = _cache_key(text, detected_lang, input_type)
         _mark_stage_end(result, "language_detection", stage_start)
 
         # Stage 2: translation
@@ -355,10 +576,10 @@ async def _run_pipeline(
         # Stage 4: parallel verification
         stage_start = _mark_stage_start(result, "verification")
         parallel_tasks: dict[str, asyncio.Task] = {}
-        verification_timeout = _stage_timeout(result, "verification", minimum=0.4)
+        verification_timeout = _stage_timeout(result, "verification", minimum=1.2)
         remaining_budget = _remaining_pipeline_budget(result)
-        if remaining_budget < 0.6:
-            _warn(result, "Skipping optional agents due to exhausted pipeline budget.")
+        if remaining_budget < 1.2:
+            _warn(result, "Pipeline budget is tight; prioritizing core verification agents.")
         else:
             if source_agent and ENABLE_SOURCE_AGENT:
                 source_timeout = min(
@@ -428,6 +649,37 @@ async def _run_pipeline(
                         "expert_validation",
                     )
                 )
+        # Always attempt source/context if available, even when budget is tight.
+        if "source_verification" not in parallel_tasks and source_agent and ENABLE_SOURCE_AGENT:
+            source_timeout = max(1.0, min(OPTIONAL_AGENT_TIMEOUTS["source_verification"], verification_timeout))
+            parallel_tasks["source_verification"] = asyncio.create_task(
+                _run_with_timeout(
+                    source_agent.process(
+                        {
+                            "text": english_text,
+                            "claims": claims_result,
+                            "compact_mode": compact_mode,
+                        }
+                    ),
+                    source_timeout,
+                    "source_verification",
+                )
+            )
+        if "context_history" not in parallel_tasks and context_agent and ENABLE_CONTEXT_AGENT:
+            context_timeout = max(0.8, min(OPTIONAL_AGENT_TIMEOUTS["context_history"], verification_timeout))
+            parallel_tasks["context_history"] = asyncio.create_task(
+                _run_with_timeout(
+                    context_agent.process(
+                        {
+                            "text": english_text,
+                            "original_text": text,
+                            "claims": claims_result,
+                        }
+                    ),
+                    context_timeout,
+                    "context_history",
+                )
+            )
 
         parallel_results: dict[str, Any] = {}
         if parallel_tasks:
@@ -461,9 +713,20 @@ async def _run_pipeline(
         if isinstance(source_meta, dict):
             result["search_provider"] = source_meta.get("search_provider", "none")
             result["search_results_count"] = source_meta.get("search_results_count", 0)
+            sources = source_meta.get("supporting_sources", [])
+            if isinstance(sources, list):
+                result["top_sources"] = [
+                    {"title": s.get("title", ""), "url": s.get("url", "")}
+                    for s in sources
+                    if isinstance(s, dict) and s.get("url")
+                ][:3]
             for item in source_meta.get("warnings", []) if isinstance(source_meta.get("warnings"), list) else []:
                 _warn(result, f"source_verification: {item}")
+            result["evidence_completeness"] = source_meta.get("evidence_completeness", "low")
         _mark_stage_end(result, "verification", stage_start)
+
+        agent_votes = _extract_agent_votes(parallel_results)
+        consensus_breakdown = _compute_consensus_breakdown(agent_votes)
 
         # Stage 5: verdict synthesis
         stage_start = _mark_stage_start(result, "verdict")
@@ -471,6 +734,8 @@ async def _run_pipeline(
             "claims": claims_result,
             "original_text": text,
             "original_language": detected_lang,
+            "agent_votes": agent_votes,
+            "consensus_breakdown": consensus_breakdown,
             **parallel_results,
         }
         try:
@@ -509,13 +774,49 @@ async def _run_pipeline(
                 "deterministic_override_applied": verdict_result.get("deterministic_override_applied", False),
                 "override_reason": verdict_result.get("override_reason"),
                 "override_match_score": verdict_result.get("override_match_score"),
+                "agent_votes": agent_votes,
+                "consensus_breakdown": consensus_breakdown,
+                "evidence_graph": _build_evidence_graph(
+                    claim_text=claims_result.get("main_claim", english_text) if isinstance(claims_result, dict) else english_text,
+                    source_result=parallel_results.get("source_verification", {}) if isinstance(parallel_results, dict) else {},
+                    context_result=parallel_results.get("context_history", {}) if isinstance(parallel_results, dict) else {},
+                    expert_result=parallel_results.get("expert_validation", {}) if isinstance(parallel_results, dict) else {},
+                    final_verdict=verdict_result.get("verdict", "UNVERIFIABLE"),
+                ),
                 "verdict_result": verdict_result,
                 "completed_at": datetime.utcnow().isoformat(),
             }
         )
+        cache_snapshot = {
+            "detected_language": result.get("detected_language"),
+            "translated_text": result.get("translated_text"),
+            "claims": result.get("claims"),
+            "agent_results": result.get("agent_results"),
+            "search_provider": result.get("search_provider"),
+            "search_results_count": result.get("search_results_count"),
+            "top_sources": result.get("top_sources"),
+            "verdict": result.get("verdict"),
+            "confidence": result.get("confidence"),
+            "summary": result.get("summary"),
+            "native_summary": result.get("native_summary"),
+            "key_evidence": result.get("key_evidence"),
+            "deterministic_override_applied": result.get("deterministic_override_applied"),
+            "override_reason": result.get("override_reason"),
+            "override_match_score": result.get("override_match_score"),
+            "agent_votes": result.get("agent_votes"),
+            "consensus_breakdown": result.get("consensus_breakdown"),
+            "evidence_graph": result.get("evidence_graph"),
+            "evidence_completeness": result.get("evidence_completeness", "low"),
+            "audio_available": result.get("audio_available", False),
+            "audio_status": result.get("audio_status", "pending"),
+            "audio_message": result.get("audio_message", ""),
+        }
+        _cache_set(cache_key, cache_snapshot)
     except Exception as e:
         traceback.print_exc()
         result.update({"status": "error", "stage": "error", "error": str(e), "audio_status": "failed"})
     finally:
         result.pop("_pipeline_start_perf", None)
         result.pop("_pipeline_deadline_perf", None)
+CLAIM_CACHE_TTL_SECONDS = int(_load_float_env("CLAIM_CACHE_TTL_SECONDS", 180))
+claim_cache: dict[str, dict[str, Any]] = {}

@@ -9,6 +9,7 @@ Base = declarative_base()
 DATABASE_URL = "sqlite:///veritasguard.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
+HOAX_REFERENCE_MAP: dict[str, list[dict]] = {}
 
 
 class KnownHoax(Base):
@@ -27,11 +28,13 @@ def init_db():
 
 
 def seed_hoaxes():
+    global HOAX_REFERENCE_MAP
     session = SessionLocal()
     try:
         data_path = os.path.join(os.path.dirname(__file__), "data", "known_hoaxes.json")
         with open(data_path, "r", encoding="utf-8-sig") as f:
             hoaxes = json.load(f)
+        HOAX_REFERENCE_MAP = {h.get("claim", ""): h.get("references", []) for h in hoaxes if h.get("claim")}
 
         existing = {entry.claim: entry for entry in session.query(KnownHoax).all()}
         for hoax in hoaxes:
@@ -106,6 +109,7 @@ def search_hoaxes(text: str) -> list[dict]:
                     "exact_claim_match": exact_claim_match,
                     "keywords": keywords,
                     "languages": languages,
+                    "references": HOAX_REFERENCE_MAP.get(hoax.claim, []),
                 })
 
         results.sort(key=lambda x: x["match_score"], reverse=True)
