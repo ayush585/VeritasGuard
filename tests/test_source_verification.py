@@ -102,3 +102,38 @@ async def test_source_verification_google_fallback(monkeypatch):
         "mistral_web_search+google_custom_search_fallback",
     }
     assert result["search_results_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_source_verification_tavily_fallback(monkeypatch):
+    monkeypatch.setattr(base_agent_module, "get_mistral_client", lambda: _DummyClient())
+    from server.agents.source_verification import SourceVerificationAgent
+
+    agent = SourceVerificationAgent()
+    agent.enable_tavily_fallback = True
+    agent.tavily_search_available = True
+    agent.enable_google_fallback = False
+
+    async def fake_search(_query):
+        return [], "", "mistral unavailable"
+
+    async def fake_tavily(_query):
+        return [{"title": "WHO", "url": "https://www.who.int/example", "snippet": "Refutes myth"}]
+
+    async def fake_query(_prompt):
+        return json.dumps(
+            {
+                "source_quality": "high",
+                "supporting_sources": [],
+                "consensus": "refutes",
+                "analysis": "Tavily fallback source used.",
+            }
+        )
+
+    monkeypatch.setattr(agent, "_search_with_mistral", fake_search)
+    monkeypatch.setattr(agent, "_search_with_tavily", fake_tavily)
+    monkeypatch.setattr(agent, "_query", fake_query)
+
+    result = await agent.process({"text": "Claim text", "claims": {"main_claim": "Claim text"}})
+    assert "tavily_search_fallback" in result["search_provider"]
+    assert result["search_results_count"] == 1

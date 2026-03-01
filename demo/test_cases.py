@@ -7,10 +7,19 @@ Run:
 
 import argparse
 import asyncio
+import os
+import sys
 
 import httpx
 
 BASE_URL = "http://localhost:8000"
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 
 STABLE_TEST_CASES = [
     {

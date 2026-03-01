@@ -40,6 +40,11 @@ LOW_VALUE_DOMAINS = {
 class SourceVerificationAgent(BaseAgent):
     def __init__(self):
         super().__init__("SourceVerifier", model="mistral-medium-latest")
+        self.tavily_api_key = os.getenv("TAVILY_API_KEY")
+        self.tavily_search_available = bool(self.tavily_api_key)
+        self.enable_tavily_fallback = (
+            os.getenv("ENABLE_TAVILY_SEARCH_FALLBACK", "true").strip().lower() in {"1", "true", "yes", "on"}
+        )
         self.google_api_key = os.getenv("GOOGLE_API_KEY")
         self.search_engine_id = os.getenv("GOOGLE_SEARCH_ENGINE_ID")
         self.google_search_available = bool(self.google_api_key and self.search_engine_id)
@@ -264,57 +269,94 @@ class SourceVerificationAgent(BaseAgent):
             f"CLAIM QUERY: {query}"
         )
 
-        try:
-            response = await asyncio.to_thread(
-                self.client.beta.conversations.start,
-                model=self.model,
-                inputs=search_prompt,
-                tools=[{"type": "web_search"}],
-            )
-            text_parts: list[str] = []
-            refs: list[dict[str, Any]] = []
-            for event in getattr(response, "events", []) or []:
-                if getattr(event, "type", "") != "message.output":
-                    continue
-                content = getattr(event, "content", [])
-                if isinstance(content, str):
-                    text_parts.append(content)
-                    continue
-                for item in content or []:
-                    item_type = getattr(item, "type", "") or (item.get("type", "") if isinstance(item, dict) else "")
-                    if item_type in {"text", "output_text"}:
-                        value = getattr(item, "text", None) or (item.get("text", "") if isinstance(item, dict) else "")
-                        if value:
-                            text_parts.append(str(value))
-                    elif item_type in {"url_citation", "citation"}:
-                        refs.append(
-                            {
-                                "title": str(getattr(item, "title", None) or (item.get("title", "Untitled") if isinstance(item, dict) else "Untitled")),
-                                "url": str(getattr(item, "url", None) or (item.get("url", "") if isinstance(item, dict) else "")),
-                                "snippet": str(getattr(item, "content", None) or (item.get("content", "") if isinstance(item, dict) else "")),
-                            }
-                        )
-            summary = "\n".join([part.strip() for part in text_parts if part and part.strip()])
-            refs = [r for r in refs if r.get("url")]
-            if not refs and summary:
-                refs = self._parse_summary_urls(summary)
-            return refs, summary, None
-        except Exception as primary_error:
+        primary_error: Exception | None = None
+        has_beta_conversations = (
+            hasattr(self.client, "beta")
+            and hasattr(getattr(self.client, "beta"), "conversations")
+            and hasattr(getattr(self.client.beta, "conversations"), "start")
+        )
+        if has_beta_conversations:
             try:
                 response = await asyncio.to_thread(
-                    self.client.chat.complete,
+                    self.client.beta.conversations.start,
                     model=self.model,
-                    messages=[{"role": "user", "content": search_prompt}],
+                    inputs=search_prompt,
                     tools=[{"type": "web_search"}],
                 )
-                content = response.choices[0].message.content
-                summary = str(content or "")
-                return self._parse_summary_urls(summary), summary, None
-            except Exception as secondary_error:
-                return [], "", f"Mistral web search unavailable ({primary_error}; fallback error: {secondary_error})"
+                text_parts: list[str] = []
+                refs: list[dict[str, Any]] = []
+                for event in getattr(response, "events", []) or []:
+                    if getattr(event, "type", "") != "message.output":
+                        continue
+                    content = getattr(event, "content", [])
+                    if isinstance(content, str):
+                        text_parts.append(content)
+                        continue
+                    for item in content or []:
+                        item_type = getattr(item, "type", "") or (
+                            item.get("type", "") if isinstance(item, dict) else ""
+                        )
+                        if item_type in {"text", "output_text"}:
+                            value = getattr(item, "text", None) or (
+                                item.get("text", "") if isinstance(item, dict) else ""
+                            )
+                            if value:
+                                text_parts.append(str(value))
+                        elif item_type in {"url_citation", "citation"}:
+                            refs.append(
+                                {
+                                    "title": str(
+                                        getattr(item, "title", None)
+                                        or (item.get("title", "Untitled") if isinstance(item, dict) else "Untitled")
+                                    ),
+                                    "url": str(
+                                        getattr(item, "url", None)
+                                        or (item.get("url", "") if isinstance(item, dict) else "")
+                                    ),
+                                    "snippet": str(
+                                        getattr(item, "content", None)
+                                        or (item.get("content", "") if isinstance(item, dict) else "")
+                                    ),
+                                }
+                            )
+                summary = "\n".join([part.strip() for part in text_parts if part and part.strip()])
+                refs = [r for r in refs if r.get("url")]
+                if not refs and summary:
+                    refs = self._parse_summary_urls(summary)
+                return refs, summary, None
+            except Exception as exc:
+                primary_error = exc
+        else:
+            primary_error = RuntimeError("Mistral beta conversations API unavailable in installed SDK.")
+
+        # Last resort: plain chat synthesis with URL extraction (no tool call).
+        try:
+            response = await asyncio.to_thread(
+                self.client.chat.complete,
+                model=self.model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": (
+                            "Provide up to 5 credible sources with direct URLs for verifying this claim. "
+                            "Prefer government, WHO, and established fact-check sites.\n\n"
+                            f"Claim: {query}"
+                        ),
+                    }
+                ],
+            )
+            content = response.choices[0].message.content
+            summary = str(content or "")
+            refs = self._parse_summary_urls(summary)
+            return refs, summary, None
+        except Exception as secondary_error:
+            return [], "", f"Mistral web search unavailable ({primary_error}; fallback error: {secondary_error})"
 
     async def _search_with_google(self, query: str) -> list[dict]:
         if not self.google_search_available:
+            return []
+        if not str(self.google_api_key or "").startswith("AIza"):
+            print("[SourceVerifier] Google fallback skipped: API key format appears invalid.")
             return []
 
         url = "https://www.googleapis.com/customsearch/v1"
@@ -339,6 +381,36 @@ class SourceVerificationAgent(BaseAgent):
                 ]
         except Exception as e:
             print(f"[SourceVerifier] Google fallback failed: {e}")
+            return []
+
+    async def _search_with_tavily(self, query: str) -> list[dict]:
+        if not self.tavily_search_available:
+            return []
+        url = "https://api.tavily.com/search"
+        payload = {
+            "api_key": self.tavily_api_key,
+            "query": query,
+            "search_depth": "basic",
+            "max_results": 5,
+            "include_answer": False,
+            "include_raw_content": False,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                resp = await client.post(url, json=payload)
+                resp.raise_for_status()
+                data = resp.json()
+                return [
+                    {
+                        "title": item.get("title", ""),
+                        "url": item.get("url", ""),
+                        "snippet": item.get("content", ""),
+                        "published_at": item.get("published_date"),
+                    }
+                    for item in data.get("results", [])
+                ]
+        except Exception as e:
+            print(f"[SourceVerifier] Tavily fallback failed: {e}")
             return []
 
     def _default_response(
@@ -405,10 +477,36 @@ class SourceVerificationAgent(BaseAgent):
                     break
 
         current_score = self._score_source_set(normalized_sources)
+        should_try_tavily = self.enable_tavily_fallback and (
+            not normalized_sources or current_score["overall"] < 0.45
+        )
+        if should_try_tavily:
+            if self.tavily_search_available:
+                for query in query_variants[:2]:
+                    tavily_results = await self._search_with_tavily(query)
+                    if not tavily_results:
+                        continue
+                    if "tavily_search_fallback" not in providers_used:
+                        providers_used.append("tavily_search_fallback")
+                    normalized_sources.extend(
+                        source
+                        for source in (
+                            self._normalize_source(item, provider="tavily_search_fallback")
+                            for item in tavily_results
+                        )
+                        if source is not None
+                    )
+                    normalized_sources = self._dedupe_sources(normalized_sources)
+                    normalized_sources = [source for source in normalized_sources if not self._is_low_value(source)]
+                    current_score = self._score_source_set(normalized_sources)
+                    if current_score["overall"] >= 0.72 and len(normalized_sources) >= 2:
+                        break
+            else:
+                warnings.append("Tavily fallback enabled but TAVILY_API_KEY is unavailable.")
+
         should_try_google = self.enable_google_fallback and (
             not normalized_sources or current_score["overall"] < 0.45
         )
-
         if should_try_google:
             if self.google_search_available:
                 for query in query_variants[:2]:

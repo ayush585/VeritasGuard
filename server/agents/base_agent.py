@@ -1,4 +1,5 @@
 import asyncio
+import os
 from abc import ABC, abstractmethod
 from server.utils.mistral_client import get_mistral_client, parse_json_safe
 
@@ -38,32 +39,54 @@ class BaseAgent(ABC):
 
     async def _query(self, prompt: str) -> str:
         await self.initialize()
+        max_retries_raw = os.getenv("MISTRAL_QUERY_MAX_RETRIES", "2")
         try:
-            if self.agent_id:
-                # Use the agents conversational endpoint
+            max_retries = max(0, int(max_retries_raw))
+        except (TypeError, ValueError):
+            max_retries = 2
+
+        for attempt in range(max_retries + 1):
+            try:
+                if self.agent_id:
+                    # Use the agents conversational endpoint
+                    try:
+                        response = await asyncio.to_thread(
+                            self.client.beta.agents.chat,
+                            agent_id=self.agent_id,
+                            messages=[{"role": "user", "content": prompt}],
+                        )
+                        return response.choices[0].message.content
+                    except Exception:
+                        pass  # fall through to direct chat
+
+                # Fallback: direct chat.complete with system prompt
                 try:
                     response = await asyncio.to_thread(
-                        self.client.beta.agents.chat,
-                        agent_id=self.agent_id,
+                        self.client.chat.complete,
+                        model=self.model,
                         messages=[{"role": "user", "content": prompt}],
                     )
                     return response.choices[0].message.content
                 except Exception:
-                    pass  # fall through to direct chat
+                    response = await asyncio.to_thread(
+                        self.client.chat.complete,
+                        model=self.model,
+                        messages=[
+                            {"role": "system", "content": self.get_instructions()},
+                            {"role": "user", "content": prompt},
+                        ],
+                    )
+                    return response.choices[0].message.content
+            except Exception as e:
+                error_text = str(e)
+                is_rate_limit = "Status 429" in error_text or "rate_limited" in error_text.lower()
+                if is_rate_limit and attempt < max_retries:
+                    await asyncio.sleep(0.6 * (2**attempt))
+                    continue
+                print(f"[{self.name}] Query error: {e}")
+                return ""
 
-            # Fallback: direct chat.complete with system prompt
-            response = await asyncio.to_thread(
-                self.client.chat.complete,
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": self.get_instructions()},
-                    {"role": "user", "content": prompt},
-                ],
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            print(f"[{self.name}] Query error: {e}")
-            return ""
+        return ""
 
     def _parse_response(self, text: str) -> dict:
         return parse_json_safe(text)

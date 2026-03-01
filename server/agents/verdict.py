@@ -1,9 +1,11 @@
+import os
+
 from server.agents.base_agent import BaseAgent
 from server.languages import get_language_name, normalize_language_code
 
 
-DETERMINISTIC_OVERRIDE_THRESHOLD = 0.82
-DETERMINISTIC_STRONG_THRESHOLD = 0.9
+DETERMINISTIC_OVERRIDE_THRESHOLD = float(os.getenv("DETERMINISTIC_OVERRIDE_THRESHOLD", "0.5"))
+DETERMINISTIC_STRONG_THRESHOLD = float(os.getenv("DETERMINISTIC_STRONG_THRESHOLD", "0.75"))
 HIGH_RISK_CATEGORIES = {"communal", "health", "panic", "scam", "election"}
 
 
@@ -49,12 +51,17 @@ class VerdictAgent(BaseAgent):
             return None
 
         keyword_hits = int(best_match.get("keyword_hits", 0) or 0)
+        token_overlap_hits = int(best_match.get("token_overlap_hits", 0) or 0)
         overlap_score = float(best_match.get("overlap_score", 0.0) or 0.0)
         combined_score = float(best_match.get("combined_score", 0.0) or match_confidence)
-        if keyword_hits < 1 or overlap_score < 0.35 or combined_score < DETERMINISTIC_OVERRIDE_THRESHOLD:
+        if (keyword_hits + token_overlap_hits) < 2 or combined_score < DETERMINISTIC_OVERRIDE_THRESHOLD:
             return None
 
-        forced_verdict = "FALSE" if match_confidence >= DETERMINISTIC_STRONG_THRESHOLD else "MOSTLY_FALSE"
+        db_verdict = str(best_match.get("verdict", "") or "").upper()
+        if db_verdict in {"FALSE", "MOSTLY_FALSE"}:
+            forced_verdict = db_verdict
+        else:
+            forced_verdict = "FALSE" if match_confidence >= DETERMINISTIC_STRONG_THRESHOLD else "MOSTLY_FALSE"
         confidence = min(0.93, max(0.72, match_confidence))
         evidence = []
         matched_claim = best_match.get("claim")

@@ -29,22 +29,27 @@ def init_db():
 def seed_hoaxes():
     session = SessionLocal()
     try:
-        if session.query(KnownHoax).count() > 0:
-            return
-
         data_path = os.path.join(os.path.dirname(__file__), "data", "known_hoaxes.json")
         with open(data_path, "r", encoding="utf-8") as f:
             hoaxes = json.load(f)
 
+        existing = {entry.claim: entry for entry in session.query(KnownHoax).all()}
         for hoax in hoaxes:
-            entry = KnownHoax(
-                claim=hoax["claim"],
-                verdict=hoax["verdict"],
-                explanation=hoax["explanation"],
-                languages=json.dumps(hoax.get("languages", [])),
-                keywords=json.dumps(hoax.get("keywords", []))
-            )
-            session.add(entry)
+            if hoax["claim"] in existing:
+                entry = existing[hoax["claim"]]
+                entry.verdict = hoax["verdict"]
+                entry.explanation = hoax["explanation"]
+                entry.languages = json.dumps(hoax.get("languages", []))
+                entry.keywords = json.dumps(hoax.get("keywords", []))
+            else:
+                entry = KnownHoax(
+                    claim=hoax["claim"],
+                    verdict=hoax["verdict"],
+                    explanation=hoax["explanation"],
+                    languages=json.dumps(hoax.get("languages", [])),
+                    keywords=json.dumps(hoax.get("keywords", []))
+                )
+                session.add(entry)
         session.commit()
     finally:
         session.close()
@@ -71,6 +76,7 @@ def search_hoaxes(text: str) -> list[dict]:
             languages = json.loads(hoax.languages) if hoax.languages else []
             keyword_hits = 0
             token_overlap_hits = 0
+            exact_claim_match = normalize(hoax.claim) in text_normalized if hoax.claim else False
             for kw in keywords:
                 kw_norm = normalize(kw)
                 if not kw_norm:
@@ -84,13 +90,20 @@ def search_hoaxes(text: str) -> list[dict]:
 
             matches = keyword_hits + token_overlap_hits
             if matches >= 2 or (keyword_hits >= 1 and token_overlap_hits >= 1):
+                score = min(
+                    1.0,
+                    (0.28 * keyword_hits)
+                    + (0.22 * token_overlap_hits)
+                    + (0.35 if exact_claim_match else 0.0),
+                )
                 results.append({
                     "claim": hoax.claim,
                     "verdict": hoax.verdict,
                     "explanation": hoax.explanation,
-                    "match_score": matches / len(keywords) if keywords else 0,
+                    "match_score": round(score, 3),
                     "keyword_hits": keyword_hits,
                     "token_overlap_hits": token_overlap_hits,
+                    "exact_claim_match": exact_claim_match,
                     "keywords": keywords,
                     "languages": languages,
                 })

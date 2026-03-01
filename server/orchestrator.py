@@ -56,6 +56,10 @@ OPTIONAL_AGENT_TIMEOUTS = {
     "context_history": _load_float_env("STAGE_BUDGET_CONTEXT_SECONDS", 1.2),
     "expert_validation": _load_float_env("STAGE_BUDGET_EXPERT_SECONDS", 1.5),
 }
+ENABLE_SOURCE_AGENT = os.getenv("ENABLE_SOURCE_AGENT", "true").strip().lower() in {"1", "true", "yes", "on"}
+ENABLE_MEDIA_AGENT = os.getenv("ENABLE_MEDIA_AGENT", "true").strip().lower() in {"1", "true", "yes", "on"}
+ENABLE_CONTEXT_AGENT = os.getenv("ENABLE_CONTEXT_AGENT", "true").strip().lower() in {"1", "true", "yes", "on"}
+ENABLE_EXPERT_AGENT = os.getenv("ENABLE_EXPERT_AGENT", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _try_load_optional_agents():
@@ -137,8 +141,16 @@ def _fallback_verdict_from_context(parallel_results: dict[str, Any], original_la
             score = float(context_result.get("match_confidence", 0.0))
         except (TypeError, ValueError):
             score = 0.0
-        if score >= 0.82:
-            verdict = "FALSE" if score >= 0.9 else "MOSTLY_FALSE"
+        threshold = _load_float_env("DETERMINISTIC_OVERRIDE_THRESHOLD", 0.5)
+        if score >= threshold:
+            db_verdict = ""
+            db_matches = context_result.get("db_matches", [])
+            if isinstance(db_matches, list) and db_matches and isinstance(db_matches[0], dict):
+                db_verdict = str(db_matches[0].get("verdict", "")).upper()
+            if db_verdict in {"FALSE", "MOSTLY_FALSE"}:
+                verdict = db_verdict
+            else:
+                verdict = "FALSE" if score >= _load_float_env("DETERMINISTIC_STRONG_THRESHOLD", 0.75) else "MOSTLY_FALSE"
             summary = (
                 "Known recurring hoax pattern matched in historical records. "
                 "This claim is treated as misinformation in degraded mode."
@@ -348,7 +360,7 @@ async def _run_pipeline(
         if remaining_budget < 0.6:
             _warn(result, "Skipping optional agents due to exhausted pipeline budget.")
         else:
-            if source_agent:
+            if source_agent and ENABLE_SOURCE_AGENT:
                 source_timeout = min(
                     OPTIONAL_AGENT_TIMEOUTS["source_verification"],
                     2.6 if compact_mode else OPTIONAL_AGENT_TIMEOUTS["source_verification"],
@@ -366,7 +378,12 @@ async def _run_pipeline(
                         "source_verification",
                     )
                 )
-            if media_agent:
+            should_run_media = (
+                ENABLE_MEDIA_AGENT
+                and media_agent is not None
+                and (input_type in {"image", "video", "audio"} or bool(image_data))
+            )
+            if should_run_media:
                 parallel_tasks["media_forensics"] = asyncio.create_task(
                     _run_with_timeout(
                         media_agent.process(
@@ -383,7 +400,7 @@ async def _run_pipeline(
                         "media_forensics",
                     )
                 )
-            if context_agent:
+            if context_agent and ENABLE_CONTEXT_AGENT:
                 parallel_tasks["context_history"] = asyncio.create_task(
                     _run_with_timeout(
                         context_agent.process(
@@ -397,7 +414,7 @@ async def _run_pipeline(
                         "context_history",
                     )
                 )
-            if expert_agent:
+            if expert_agent and ENABLE_EXPERT_AGENT:
                 parallel_tasks["expert_validation"] = asyncio.create_task(
                     _run_with_timeout(
                         expert_agent.process(

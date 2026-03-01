@@ -81,6 +81,21 @@ class ContextHistoryAgent(BaseAgent):
             match["combined_score"] = round(max(match.get("match_score", 0.0), overlap), 3)
             match["risk_category"] = self._infer_risk_category(match.get("claim", ""), match.get("explanation", ""))
         unique_matches.sort(key=lambda item: item.get("combined_score", 0.0), reverse=True)
+        strongest_match = unique_matches[0] if unique_matches else None
+
+        # Fast-path: use deterministic DB-backed context when match signal is already strong.
+        if strongest_match and strongest_match.get("combined_score", 0.0) >= 0.5:
+            return {
+                "known_hoax_match": True,
+                "match_confidence": round(float(strongest_match.get("combined_score", 0.0)), 3),
+                "historical_context": strongest_match.get("explanation", "Known recurring hoax pattern."),
+                "pattern_type": "recurring",
+                "similar_claims": [m.get("claim") for m in unique_matches[:3]],
+                "recommendation": "Treat as high-risk known misinformation and discourage forwarding.",
+                "db_matches": unique_matches,
+                "matched_claim_count": len(unique_matches),
+                "risk_category": strongest_match.get("risk_category", "unknown"),
+            }
 
         if unique_matches:
             matches_text = "\n".join(
