@@ -93,6 +93,13 @@ PROFILES = {
 }
 
 
+def _has_sources(data: dict) -> bool:
+    if int(data.get("search_results_count", 0) or 0) > 0:
+        return True
+    top_sources = data.get("top_sources", [])
+    return isinstance(top_sources, list) and any(isinstance(s, dict) and s.get("url") for s in top_sources)
+
+
 async def run_test(client: httpx.AsyncClient, case: dict, timeout_seconds: int) -> tuple[bool, bool]:
     print(f"\n{'=' * 60}")
     print(f"TEST: {case['name']}")
@@ -119,7 +126,9 @@ async def run_test(client: httpx.AsyncClient, case: dict, timeout_seconds: int) 
             verdict = data.get("verdict", "???")
             confidence = data.get("confidence", 0)
             lang = data.get("detected_language", "?")
-            match = verdict == case["expected_verdict"]
+            verdict_match = verdict == case["expected_verdict"]
+            source_match = _has_sources(data)
+            match = verdict_match and source_match
             print(f"  RESULT: {verdict} (confidence: {confidence:.0%})")
             print(f"  DETECTED LANG: {lang}")
             print(f"  SEARCH: {data.get('search_provider', 'n/a')} ({data.get('search_results_count', 0)} results)")
@@ -130,6 +139,8 @@ async def run_test(client: httpx.AsyncClient, case: dict, timeout_seconds: int) 
                 print(f"  NATIVE: {data['native_summary'][:220]}")
             if data.get("warnings"):
                 print(f"  WARNINGS: {data['warnings'][:2]}")
+            if not source_match:
+                print("  SOURCE CHECK: FAILED (no external/local fallback references)")
             print("  >> PASS" if match else "  >> MISMATCH")
             return True, match
 
@@ -175,7 +186,7 @@ async def main(profile: str, timeout_seconds: int):
     print(f"Timeouts: {timeouts}")
     print(f"Pass rate: {pass_rate:.1f}%")
     if profile == "stable":
-        print("Stable profile target: >=90% pass rate and zero timeout.")
+        print("Stable profile target: >=90% pass rate and zero timeout with evidence present.")
     print("Done!")
 
 

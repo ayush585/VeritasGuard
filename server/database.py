@@ -23,6 +23,16 @@ class KnownHoax(Base):
     keywords = Column(Text, default="[]")
 
 
+class VerificationRecord(Base):
+    __tablename__ = "verification_results"
+
+    verification_id = Column(String(64), primary_key=True)
+    status = Column(String(32), nullable=False)
+    payload = Column(Text, nullable=False)
+    created_at = Column(String(64), nullable=False)
+    updated_at = Column(String(64), nullable=False)
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
 
@@ -92,7 +102,7 @@ def search_hoaxes(text: str) -> list[dict]:
                     token_overlap_hits += 1
 
             matches = keyword_hits + token_overlap_hits
-            if matches >= 2 or (keyword_hits >= 1 and token_overlap_hits >= 1):
+            if matches >= 2 or (keyword_hits >= 1 and token_overlap_hits >= 1) or exact_claim_match:
                 score = min(
                     1.0,
                     (0.28 * keyword_hits)
@@ -114,5 +124,49 @@ def search_hoaxes(text: str) -> list[dict]:
 
         results.sort(key=lambda x: x["match_score"], reverse=True)
         return results
+    finally:
+        session.close()
+
+
+def save_verification_result(verification_id: str, status: str, payload: dict, now_iso: str):
+    session = SessionLocal()
+    try:
+        existing = session.query(VerificationRecord).filter(VerificationRecord.verification_id == verification_id).first()
+        serialized = json.dumps(payload, ensure_ascii=False)
+        if existing:
+            existing.status = status
+            existing.payload = serialized
+            existing.updated_at = now_iso
+        else:
+            record = VerificationRecord(
+                verification_id=verification_id,
+                status=status,
+                payload=serialized,
+                created_at=now_iso,
+                updated_at=now_iso,
+            )
+            session.add(record)
+        session.commit()
+    finally:
+        session.close()
+
+
+def get_verification_result(verification_id: str) -> dict | None:
+    session = SessionLocal()
+    try:
+        existing = session.query(VerificationRecord).filter(VerificationRecord.verification_id == verification_id).first()
+        if not existing:
+            return None
+        try:
+            payload = json.loads(existing.payload)
+        except Exception:
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        payload.setdefault("verification_id", verification_id)
+        payload.setdefault("status", existing.status)
+        payload.setdefault("created_at", existing.created_at)
+        payload.setdefault("updated_at", existing.updated_at)
+        return payload
     finally:
         session.close()

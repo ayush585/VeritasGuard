@@ -1,0 +1,90 @@
+[Server] Initializing database...
+[Server] Initializing agents...
+[LanguageDetector] Adapter capabilities: {'chat_complete': True, 'ocr_process': False, 'beta_agents': False, 'beta_conversations': False, 'tools_in_chat': True}
+[Translator] Adapter capabilities: {'chat_complete': True, 'ocr_process': False, 'beta_agents': False, 'beta_conversations': False, 'tools_in_chat': True}
+[ClaimExtractor] Adapter capabilities: {'chat_complete': True, 'ocr_process': False, 'beta_agents': False, 'beta_conversations': False, 'tools_in_chat': True}
+[VerdictSynthesizer] Adapter capabilities: {'chat_complete': True, 'ocr_process': False, 'beta_agents': False, 'beta_conversations': False, 'tools_in_chat': True}
+[SourceVerifier] Adapter capabilities: {'chat_complete': True, 'ocr_process': False, 'beta_agents': False, 'beta_conversations': False, 'tools_in_chat': True}
+[MediaForensics] Adapter capabilities: {'chat_complete': True, 'ocr_process': False, 'beta_agents': False, 'beta_conversations': False, 'tools_in_chat': True}
+[ContextHistory] Adapter capabilities: {'chat_complete': True, 'ocr_process': False, 'beta_agents': False, 'beta_conversations': False, 'tools_in_chat': True}
+[ExpertValidator] Adapter capabilities: {'chat_complete': True, 'ocr_process': False, 'beta_agents': False, 'beta_conversations': False, 'tools_in_chat': True}
+[Orchestrator] Initialized 8 agents
+[Server] Ready!
+INFO:     127.0.0.1:57287 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "POST /verify/text HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/107f82e1-b92e-48cd-96ff-4559b4fce552 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "POST /verify/text HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/c757d811-1791-4c70-bc59-8f5e31ab557c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "POST /verify/text HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/98fe44f5-fffe-4225-b35d-6da267b7f278 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "POST /verify/text HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/9d659738-bf45-42c9-8653-498784108f23 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "POST /verify/text HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/4de28c50-d8a5-4b03-beb9-a4a874aa0e18 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "POST /verify/text HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57287 - "GET /result/e92271b7-63a8-4c07-902a-4a2b578d6dcf HTTP/1.1" 200 OK

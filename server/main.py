@@ -302,6 +302,20 @@ async def whatsapp_webhook(request: Request):
     if not body and num_media <= 0:
         return _twiml_message("Please send a text or image to verify.")
 
+    lower_body = body.lower()
+    if num_media <= 0 and lower_body.startswith("status"):
+        parts = body.split(maxsplit=1)
+        if len(parts) < 2 or not parts[1].strip():
+            return _twiml_message("Please send: status <verification_id>")
+        verification_id = parts[1].strip()
+        result = get_result(verification_id)
+        if not result:
+            return _twiml_message(f"No result found for ID: {verification_id}")
+        if result.get("status") != "completed":
+            stage = result.get("stage", "processing")
+            return _twiml_message(f"Verification {verification_id} is still {stage}.")
+        return _twiml_message(_build_whatsapp_final_message(result))
+
     verification_id = str(uuid.uuid4())
     inbound_sid = params.get("MessageSid", "")
 

@@ -13,12 +13,52 @@
         "url": "https://pib.gov.in/PressReleasePage.aspx?PRID=1932598"
       }
     ],
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or"
+    ],
     "keywords": [
-      "muslim", "poison", "water", "water supply", "drink water",
-      "jahar pani", "zeher paani", "visham neeru", "tanni poison",
-      "pani te bish", "neeru visha", "vellam visham", "paani vich zehar",
-      "à¤®à¥à¤¸à¥à¤²à¤¿à¤®", "à¤ªà¤¾à¤¨à¥€", "à¤œà¤¹à¤°", "à®ªà¯Šà®¯à¯à®šà®©à¯", "à®¤à®£à¯à®£à¯€à®°à¯", "à¦®à§à¦¸à¦²à¦¿à¦®", "à¦¬à¦¿à¦·", "à¤ªà¤¾à¤£à¥€", "à¤µà¤¿à¤·", "à°¨à±€à°³à±à°³à°²à±‹", "à°µà°¿à°·à°‚"
+      "muslim",
+      "poison",
+      "water",
+      "water supply",
+      "drink water",
+      "jahar pani",
+      "zeher paani",
+      "visham neeru",
+      "tanni poison",
+      "pani te bish",
+      "neeru visha",
+      "vellam visham",
+      "paani vich zehar",
+      "मुस्लिम",
+      "à¤ªà¤¾à¤¨à¥€",
+      "à¤œà¤¹à¤°",
+      "à®ªà¯Šà®¯à¯à®šà®©à¯",
+      "à®¤à®£à¯à®£à¯€à®°à¯",
+      "মুসলিম",
+      "বিষ",
+      "à¤ªà¤¾à¤£à¥€",
+      "विष",
+      "à°¨à±€à°³à±à°³à°²à±‹",
+      "à°µà°¿à°·à°‚",
+      "???????",
+      "????",
+      "???",
+      "??????? ??? ???? ??? ??? ???? ??? ???",
+      "muslim log pani me zehar",
+      "muslim poisoning water"
     ]
   },
   {
@@ -35,22 +75,74 @@
         "url": "https://www.reuters.com/fact-check/"
       }
     ],
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or"
+    ],
     "keywords": [
-      "5g", "tower", "covid", "corona", "radiation covid",
-      "5g se corona", "5g corona spread", "5g nal corona",
-      "5g karone corona", "5g dwara covid",
-      "5à¤œà¥€", "à¤•à¥‹à¤°à¥‹à¤¨à¤¾", "à®Ÿà®µà®°à¯", "à®•à¯Šà®°à¯‹à®©à®¾", "à¦Ÿà¦¾à¦“à¦¯à¦¼à¦¾à¦°", "à¦•à¦°à§‹à¦¨à¦¾", "à¤Ÿà¥‰à¤µà¤°", "à°•à°°à±‹à°¨à°¾", "à°Ÿà°µà°°à±"
+      "5g",
+      "tower",
+      "covid",
+      "corona",
+      "radiation covid",
+      "5g se corona",
+      "5g corona spread",
+      "5g nal corona",
+      "5g karone corona",
+      "5g dwara covid",
+      "5à¤œà¥€",
+      "à¤•à¥‹à¤°à¥‹à¤¨à¤¾",
+      "à®Ÿà®µà®°à¯",
+      "à®•à¯Šà®°à¯‹à®©à®¾",
+      "à¦Ÿà¦¾à¦“à¦¯à¦¼à¦¾à¦°",
+      "à¦•à¦°à§‹à¦¨à¦¾",
+      "à¤Ÿà¥‰à¤µà¤°",
+      "à°•à°°à±‹à°¨à°¾",
+      "à°Ÿà°µà°°à±",
+      "5G ????? ???? ????? ?????????????",
+      "?????",
+      "5G ???? ??????"
     ]
   },
   {
     "claim": "Cow urine cures cancer",
     "verdict": "FALSE",
     "explanation": "No robust peer-reviewed evidence proves cow urine cures cancer.",
-    "languages": ["en", "hi", "mr", "gu", "kn", "ml", "ta", "te", "bn", "pa", "ur", "sa"],
+    "languages": [
+      "en",
+      "hi",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "ta",
+      "te",
+      "bn",
+      "pa",
+      "ur",
+      "sa"
+    ],
     "keywords": [
-      "cow urine", "gomutra", "gaumutra", "cancer cure", "cancer thik",
-      "gaay ka mutra", "gomutra ilaaj", "gomutra upchar", "go mutra chikitsa"
+      "cow urine",
+      "gomutra",
+      "gaumutra",
+      "cancer cure",
+      "cancer thik",
+      "gaay ka mutra",
+      "gomutra ilaaj",
+      "gomutra upchar",
+      "go mutra chikitsa"
     ]
   },
   {
@@ -67,11 +159,42 @@
         "url": "https://www.cert-in.org.in/"
       }
     ],
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or"
+    ],
     "keywords": [
-      "whatsapp", "hack phone", "open message hack", "message se hack",
-      "whatsapp message hack", "forwarded link hack", "sms open hack",
-      "à¤µà¥à¤¹à¤¾à¤Ÿà¥à¤¸à¤à¤ª", "à¤¹à¥ˆà¤•", "à¦®à§‡à¦¸à§‡à¦œ", "à¦¹à§à¦¯à¦¾à¦•", "à®µà®¾à®Ÿà¯à®¸à¯à®…à®ªà¯", "à®¹à¯‡à®•à¯", "à¤¸à¤‚à¤¦à¥‡à¤¶", "à°¹à±à°¯à°¾à°•à±", "à°µà°¾à°Ÿà±à°¸à°¾à°ªà±"
+      "whatsapp",
+      "hack phone",
+      "open message hack",
+      "message se hack",
+      "whatsapp message hack",
+      "forwarded link hack",
+      "sms open hack",
+      "à¤µà¥à¤¹à¤¾à¤Ÿà¥à¤¸à¤à¤ª",
+      "à¤¹à¥ˆà¤•",
+      "à¦®à§‡à¦¸à§‡à¦œ",
+      "à¦¹à§à¦¯à¦¾à¦•",
+      "à®µà®¾à®Ÿà¯à®¸à¯à®…à®ªà¯",
+      "à®¹à¯‡à®•à¯",
+      "à¤¸à¤‚à¤¦à¥‡à¤¶",
+      "à°¹à±à°¯à°¾à°•à±",
+      "à°µà°¾à°Ÿà±à°¸à°¾à°ªà±",
+      "?????",
+      "WhatsApp ????? ?????? ??? ????? ???? ????",
+      "?????????",
+      "???"
     ]
   },
   {
@@ -88,12 +211,46 @@
         "url": "https://www.cdc.gov/vaccines/parents/why-vaccinate/vaccine-decision.html"
       }
     ],
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or", "ne"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or",
+      "ne"
+    ],
     "keywords": [
-      "microchip vaccine", "chip in vaccine", "tracking chip", "government chip",
-      "teeka chip", "vaccine surveillance", "covid vaccine chip",
-      "implanting microchips through vaccines", "microchips through vaccines", "microchips in vaccines",
-      "à¤®à¤¾à¤‡à¤•à¥à¤°à¥‹à¤šà¤¿à¤ª", "à¤µà¥ˆà¤•à¥à¤¸à¥€à¤¨", "à¤®à¯ˆà®•à¯à®°à¯‹à®šà®¿à®ªà¯", "à®¤à®Ÿà¯à®ªà¯à®ªà¯‚à®šà®¿", "à¦®à¦¾à¦‡à¦•à§à¦°à§‹à¦šà¦¿à¦ª", "à¦­à§à¦¯à¦¾à¦•à¦¸à¦¿à¦¨", "à¤®à¤¾à¤¯à¤•à¥à¤°à¥‹à¤šà¤¿à¤ª", "à¤²à¤¸", "à°®à±ˆà°•à±à°°à±‹à°šà°¿à°ªà±", "à°µà±à°¯à°¾à°•à±à°¸à°¿à°¨à±"
+      "microchip vaccine",
+      "chip in vaccine",
+      "tracking chip",
+      "government chip",
+      "teeka chip",
+      "vaccine surveillance",
+      "covid vaccine chip",
+      "implanting microchips through vaccines",
+      "microchips through vaccines",
+      "microchips in vaccines",
+      "à¤®à¤¾à¤‡à¤•à¥à¤°à¥‹à¤šà¤¿à¤ª",
+      "à¤µà¥ˆà¤•à¥à¤¸à¥€à¤¨",
+      "à¤®à¯ˆà®•à¯à®°à¯‹à®šà®¿à®ªà¯",
+      "à®¤à®Ÿà¯à®ªà¯à®ªà¯‚à®šà®¿",
+      "à¦®à¦¾à¦‡à¦•à§à¦°à§‹à¦šà¦¿à¦ª",
+      "à¦­à§à¦¯à¦¾à¦•à¦¸à¦¿à¦¨",
+      "à¤®à¤¾à¤¯à¤•à¥à¤°à¥‹à¤šà¤¿à¤ª",
+      "लस",
+      "à°®à±ˆà°•à±à°°à±‹à°šà°¿à°ªà±",
+      "à°µà±à°¯à°¾à°•à±à°¸à°¿à°¨à±",
+      "??????????",
+      "???????",
+      "?????? ??????????"
     ]
   },
   {
@@ -110,41 +267,125 @@
         "url": "https://pib.gov.in/factcheck.aspx"
       }
     ],
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or"
+    ],
     "keywords": [
-      "garlic covid", "lasun corona", "poondu corona", "lahsun cure",
-      "garlic prevents corona", "rasun covid",
-      "à¤²à¤¹à¤¸à¥à¤¨", "à¤•à¥‹à¤°à¥‹à¤¨à¤¾", "à®ªà¯‚à®£à¯à®Ÿà¯", "à®•à¯Šà®°à¯‹à®©à®¾", "à®µà®°à®¾à®¤à¯", "à®•à¯‹à®µà®¿à®Ÿà¯", "à¦•à§‹à¦­à¦¿à¦¡", "à¦°à¦¸à§à¦¨", "à¦²à¦¸à§à¦¨", "à¦•à¦°à§‹à¦¨à¦¾", "à¦²à¦¾à¦—à¦¬à§‡ à¦¨à¦¾", "à¤²à¤¸à¥‚à¤£", "à°µà±†à°²à±à°²à±à°²à±à°²à°¿", "à°•à°°à±‹à°¨à°¾"
+      "garlic covid",
+      "lasun corona",
+      "poondu corona",
+      "lahsun cure",
+      "garlic prevents corona",
+      "rasun covid",
+      "लहसुन",
+      "à¤•à¥‹à¤°à¥‹à¤¨à¤¾",
+      "à®ªà¯‚à®£à¯à®Ÿà¯",
+      "à®•à¯Šà®°à¯‹à®©à®¾",
+      "வராது",
+      "à®•à¯‹à®µà®¿à®Ÿà¯",
+      "à¦•à§‹à¦­à¦¿à¦¡",
+      "রসুন",
+      "লসুন",
+      "à¦•à¦°à§‹à¦¨à¦¾",
+      "à¦²à¦¾à¦—à¦¬à§‡ à¦¨à¦¾",
+      "à¤²à¤¸à¥‚à¤£",
+      "à°µà±†à°²à±à°²à±à°²à±à°²à°¿",
+      "à°•à°°à±‹à°¨à°¾",
+      "??????",
+      "?????",
+      "?????? ???????????? ?????? ?????"
     ]
   },
   {
     "claim": "Love Jihad is an organized nationwide conspiracy",
     "verdict": "UNVERIFIABLE",
     "explanation": "Large-scale coordinated conspiracy evidence is not established in official investigations.",
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur"
+    ],
     "keywords": [
-      "love jihad", "forced conversion conspiracy", "organized conversion",
-      "prem jihad", "dharm parivartan saazish"
+      "love jihad",
+      "forced conversion conspiracy",
+      "organized conversion",
+      "prem jihad",
+      "dharm parivartan saazish"
     ]
   },
   {
     "claim": "A child-lifting gang is active in this area, do not trust outsiders",
     "verdict": "MOSTLY_FALSE",
     "explanation": "Frequent panic-forward hoax pattern; many such alerts are unverified and have triggered violence.",
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or", "ne"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or",
+      "ne"
+    ],
     "keywords": [
-      "child lifter", "kidnap gang", "bachcha chor", "child kidnapping alert",
-      "share immediately child theft", "baby snatcher gang"
+      "child lifter",
+      "kidnap gang",
+      "bachcha chor",
+      "child kidnapping alert",
+      "share immediately child theft",
+      "baby snatcher gang"
     ]
   },
   {
     "claim": "Doctors are harvesting organs from patients in local hospitals",
     "verdict": "MOSTLY_FALSE",
     "explanation": "Viral versions are generally unverified rumors; claims should be checked with official police and hospital statements.",
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "or"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "or"
+    ],
     "keywords": [
-      "organ harvesting", "doctor organ theft", "hospital organ mafia",
-      "ang churana", "organ racket hospital"
+      "organ harvesting",
+      "doctor organ theft",
+      "hospital organ mafia",
+      "ang churana",
+      "organ racket hospital"
     ]
   },
   {
@@ -161,33 +402,96 @@
         "url": "https://www.mohfw.gov.in/"
       }
     ],
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or"
+    ],
     "keywords": [
-      "hot water kills corona", "garam pani corona", "warm water covid cure",
-      "every 15 minutes hot water", "upla pani corona",
-      "à¤—à¤°à¤® à¤ªà¤¾à¤¨à¥€", "à¥§à¥« à¤®à¤¿à¤¨à¤Ÿ", "à®šà¯‚à®Ÿà¯à®¨à¯€à®°à¯", "à§§à§« à¦®à¦¿à¦¨à¦¿à¦Ÿ", "à¤—à¤°à¤® à¤ªà¤¾à¤£à¥€", "à¤¦à¤° 15 à¤®à¤¿à¤¨à¤¿à¤Ÿà¤¾à¤‚à¤¨à¥€", "à°µà±‡à°¡à°¿ à°¨à±€à°°à±", "15 à°¨à°¿à°®à°¿à°·à°¾à°²"
+      "hot water kills corona",
+      "garam pani corona",
+      "warm water covid cure",
+      "every 15 minutes hot water",
+      "upla pani corona",
+      "à¤—à¤°à¤® à¤ªà¤¾à¤¨à¥€",
+      "à¥§à¥« à¤®à¤¿à¤¨à¤Ÿ",
+      "à®šà¯‚à®Ÿà¯à®¨à¯€à®°à¯",
+      "à§§à§« à¦®à¦¿à¦¨à¦¿à¦Ÿ",
+      "à¤—à¤°à¤® à¤ªà¤¾à¤£à¥€",
+      "à¤¦à¤° 15 à¤®à¤¿à¤¨à¤¿à¤Ÿà¤¾à¤‚à¤¨à¥€",
+      "à°µà±‡à°¡à°¿ à°¨à±€à°°à±",
+      "15 నిమిషాల",
+      "?? ?? ????????? ??? ????",
+      "??? ????",
+      "??????",
+      "??? ???? ?? 15 ????"
     ]
   },
   {
     "claim": "Government is giving free money if you click this link and share OTP",
     "verdict": "FALSE",
     "explanation": "Common scam pattern using phishing links and OTP theft.",
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or", "ne", "sd"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or",
+      "ne",
+      "sd"
+    ],
     "keywords": [
-      "free money link", "government scheme link", "share otp", "bank kyc update",
-      "click to claim subsidy", "instant cash offer"
+      "free money link",
+      "government scheme link",
+      "share otp",
+      "bank kyc update",
+      "click to claim subsidy",
+      "instant cash offer"
     ]
   },
   {
     "claim": "UNVERIFIED election result screenshots prove vote tampering",
     "verdict": "UNVERIFIABLE",
     "explanation": "Screenshots without provenance are weak evidence; official election authority releases are required.",
-    "languages": ["en", "hi", "ta", "te", "bn", "mr", "gu", "kn", "ml", "pa", "ur", "as", "or"],
+    "languages": [
+      "en",
+      "hi",
+      "ta",
+      "te",
+      "bn",
+      "mr",
+      "gu",
+      "kn",
+      "ml",
+      "pa",
+      "ur",
+      "as",
+      "or"
+    ],
     "keywords": [
-      "vote tampering screenshot", "election hacking image", "booth rigging viral screenshot",
-      "ec result fake screenshot", "evm manipulation image"
+      "vote tampering screenshot",
+      "election hacking image",
+      "booth rigging viral screenshot",
+      "ec result fake screenshot",
+      "evm manipulation image"
     ]
   }
 ]
-
-

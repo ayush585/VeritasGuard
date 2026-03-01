@@ -84,7 +84,7 @@ class ContextHistoryAgent(BaseAgent):
         strongest_match = unique_matches[0] if unique_matches else None
 
         # Fast-path: use deterministic DB-backed context when match signal is already strong.
-        if strongest_match and strongest_match.get("combined_score", 0.0) >= 0.5:
+        if strongest_match and strongest_match.get("combined_score", 0.0) >= 0.35:
             return {
                 "known_hoax_match": True,
                 "match_confidence": round(float(strongest_match.get("combined_score", 0.0)), 3),
