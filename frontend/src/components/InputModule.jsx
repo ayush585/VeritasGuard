@@ -32,7 +32,10 @@ function InputModule({
     <section className="panel input-module entering" aria-label="Verification Input Module" ref={scopeRef}>
       <div className="panel-head">
         <h2>Run Live Verification</h2>
-        <p>Paste or upload suspicious content. VeritasGuard will orchestrate multilingual verification agents.</p>
+        <p>
+          Paste or upload suspicious content. VeritasGuard will orchestrate multilingual verification agents.
+          Public verification is open; institutional debug access is protected.
+        </p>
       </div>
 
       <div className="mode-switch" role="tablist" aria-label="Input mode">

@@ -23,9 +23,19 @@ export function sourceLabel(provider) {
     mistral_web_search: 'Mistral Web Search',
     tavily_search_fallback: 'Tavily Fallback',
     local_known_hoax_references: 'Local Trusted References',
+    local_hoax_reference: 'Local Hoax References',
+    google_custom_search_fallback: 'Google Fallback',
     none: 'No External Search',
   }
-  return map[provider] || titleCase(provider || 'none')
+  const raw = provider || 'none'
+  if (map[raw]) return map[raw]
+  if (String(raw).includes('+')) {
+    return String(raw)
+      .split('+')
+      .map((part) => map[part] || titleCase(part))
+      .join(' + ')
+  }
+  return titleCase(raw)
 }
 
 export function domainFromUrl(rawUrl) {

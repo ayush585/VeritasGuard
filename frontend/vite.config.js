@@ -8,6 +8,9 @@ export default defineConfig({
     proxy: {
       '/verify': 'http://localhost:8000',
       '/result': 'http://localhost:8000',
+      '/healthz': 'http://localhost:8000',
+      '/readyz': 'http://localhost:8000',
+      '/ops': 'http://localhost:8000',
     }
   },
   test: {

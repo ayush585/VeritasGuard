@@ -17,3 +17,16 @@ if (!navigator.clipboard) {
     writeText: () => Promise.resolve(),
   }
 }
+
+if (!window.matchMedia) {
+  window.matchMedia = (query) => ({
+    matches: query === '(prefers-reduced-motion: reduce)',
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })
+}

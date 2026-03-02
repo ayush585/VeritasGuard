@@ -5,6 +5,12 @@ const api = axios.create({
   timeout: 30000,
 })
 
+function adminHeaders() {
+  const adminKey = import.meta.env.VITE_ADMIN_API_KEY
+  if (!adminKey) return {}
+  return { 'X-Admin-Key': adminKey }
+}
+
 export async function submitText(text) {
   const formData = new FormData()
   formData.append('text', text)
@@ -25,7 +31,9 @@ export async function getResult(verificationId) {
 }
 
 export async function getResultDebug(verificationId) {
-  const { data } = await api.get(`/result/${verificationId}/debug`)
+  const { data } = await api.get(`/result/${verificationId}/debug`, {
+    headers: adminHeaders(),
+  })
   return data
 }
 

@@ -43,25 +43,25 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .confidence-block {
   display: grid;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .confidence-top {
   display: flex;
   justify-content: space-between;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .confidence-track {
   height: 10px;
   border-radius: 999px;
-  background: #1c3450;
+  background: #1a314b;
   overflow: hidden;
 }
 
@@ -76,7 +76,7 @@
   border: 1px solid rgba(230, 116, 84, 0.46);
   background: rgba(224, 101, 69, 0.16);
   padding: 10px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .summary-block {
@@ -86,7 +86,7 @@
 
 .summary-block h4 {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -105,14 +105,14 @@
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .metric-chip {
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   background: rgba(8, 17, 32, 0.62);
-  padding: 8px 9px;
+  padding: 9px 10px;
   display: grid;
   gap: 4px;
 }
@@ -131,7 +131,7 @@
 
 .audio-box {
   display: grid;
-  gap: 8px;
+  gap: var(--space-1);
   padding: 10px;
   border-radius: 10px;
   border: 1px solid var(--line-soft);
@@ -151,7 +151,7 @@
 .source-list {
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: var(--space-1);
   padding: 0;
   margin: 10px 0;
 }
@@ -160,6 +160,12 @@
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   background: rgba(9, 19, 33, 0.62);
+  transition: 160ms ease;
+}
+
+.source-list li:hover {
+  border-color: rgba(98, 193, 206, 0.52);
+  transform: translateY(-1px);
 }
 
 .source-list a {
@@ -170,7 +176,7 @@
 }
 
 .source-list span {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
 
@@ -200,7 +206,7 @@
 .votes-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .votes-table th,
@@ -213,7 +219,7 @@
 
 .votes-table th {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -221,7 +227,7 @@
 .meter-group {
   margin-top: 10px;
   display: grid;
-  gap: 7px;
+  gap: var(--space-1);
 }
 
 .meter-group label {
@@ -233,7 +239,7 @@
 
 .meter-group span,
 .meter-group strong {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .meter {
@@ -287,13 +293,19 @@
 .decision-path {
   margin-top: 8px;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .debug-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-1);
   flex-wrap: wrap;
+}
+
+.debug-body p {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-1);
 }
 
 .debug-body pre {

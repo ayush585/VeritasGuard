@@ -3,6 +3,7 @@ import base64
 import hashlib
 import hmac
 import html
+import logging
 import os
 import time
 import uuid
@@ -10,11 +11,11 @@ from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from server.database import init_db, seed_hoaxes
+from server.database import get_db_runtime_status, init_db, seed_hoaxes
 from server.orchestrator import (
     get_audio,
     get_result,
@@ -25,20 +26,74 @@ from server.orchestrator import (
 from server.utils.mistral_adapter import MistralAdapter
 from server.utils.twilio_client import send_whatsapp_message
 
+logger = logging.getLogger("veritasguard")
+logging.basicConfig(level=logging.INFO)
+
 WHATSAPP_ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
 WHATSAPP_MEDIA_MAX_BYTES = int(os.getenv("WHATSAPP_MEDIA_MAX_BYTES", str(4 * 1024 * 1024)))
 WHATSAPP_MEDIA_TIMEOUT_SECONDS = float(os.getenv("WHATSAPP_MEDIA_TIMEOUT_SECONDS", "8"))
 WHATSAPP_MAX_WAIT_SECONDS = float(os.getenv("WHATSAPP_MAX_WAIT_SECONDS", "12"))
 WHATSAPP_RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("WHATSAPP_RATE_LIMIT_WINDOW_SECONDS", "60"))
 WHATSAPP_RATE_LIMIT_MAX_REQUESTS = int(os.getenv("WHATSAPP_RATE_LIMIT_MAX_REQUESTS", "5"))
+VERIFY_RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("VERIFY_RATE_LIMIT_WINDOW_SECONDS", "60"))
+VERIFY_RATE_LIMIT_MAX_REQUESTS = int(os.getenv("VERIFY_RATE_LIMIT_MAX_REQUESTS", "25"))
 WHATSAPP_VALIDATE_SIGNATURE = os.getenv("WHATSAPP_VALIDATE_SIGNATURE", "true").strip().lower() in {
     "1",
     "true",
     "yes",
     "on",
 }
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "").strip()
 _whatsapp_rate_limit: dict[str, list[float]] = {}
+_verify_rate_limit: dict[str, list[float]] = {}
 _whatsapp_jobs: dict[str, dict] = {}
+
+
+def _parse_cors_allowed_origins() -> tuple[list[str], bool]:
+    raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+    if not raw:
+        return ["*"], False
+    origins = [item.strip() for item in raw.split(",") if item.strip()]
+    if not origins:
+        return ["*"], False
+    if "*" in origins:
+        return ["*"], False
+    return origins, True
+
+
+def _redact_database_url(url: str) -> str:
+    parsed = urlparse(url)
+    if not parsed.username and not parsed.password:
+        return url
+    credentials = parsed.netloc.split("@")[0]
+    redacted = parsed.netloc.replace(credentials, "***:***")
+    return parsed._replace(netloc=redacted).geturl()
+
+
+def _canonical_request_url(request: Request) -> str:
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    forwarded_host = request.headers.get("x-forwarded-host")
+    if forwarded_proto and forwarded_host:
+        return f"{forwarded_proto}://{forwarded_host}{request.url.path}"
+    return str(request.url)
+
+
+def _client_identifier(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        first = forwarded_for.split(",")[0].strip()
+        if first:
+            return first
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def _require_admin_key(x_admin_key: str | None):
+    if not ADMIN_API_KEY:
+        raise HTTPException(status_code=503, detail="Admin API key is not configured.")
+    if x_admin_key != ADMIN_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid admin key.")
 
 
 async def _extract_text_with_mistral_ocr(contents: bytes, mime_type: str) -> tuple[str, dict]:
@@ -105,6 +160,18 @@ def _apply_rate_limit(sender: str) -> bool:
         return False
     recent.append(now)
     _whatsapp_rate_limit[sender] = recent
+    return True
+
+
+def _apply_verify_rate_limit(client_id: str) -> bool:
+    now = time.time()
+    entries = _verify_rate_limit.setdefault(client_id, [])
+    recent = [ts for ts in entries if now - ts <= VERIFY_RATE_LIMIT_WINDOW_SECONDS]
+    if len(recent) >= VERIFY_RATE_LIMIT_MAX_REQUESTS:
+        _verify_rate_limit[client_id] = recent
+        return False
+    recent.append(now)
+    _verify_rate_limit[client_id] = recent
     return True
 
 
@@ -178,6 +245,10 @@ def _build_whatsapp_final_message(result: dict) -> str:
     return response_text
 
 
+def _log_request_event(event: str, **payload):
+    logger.info("%s | %s", event, payload)
+
+
 async def _finalize_whatsapp_job(job_id: str):
     job = _whatsapp_jobs.get(job_id)
     if not job:
@@ -196,6 +267,13 @@ async def _finalize_whatsapp_job(job_id: str):
     job["sent"] = ok
     job["final_message_sid"] = info if ok else ""
     job["send_error"] = "" if ok else info
+    _log_request_event(
+        "whatsapp_final_sent",
+        verification_id=verification_id,
+        sender=sender,
+        sent=ok,
+        info=info,
+    )
 
 
 @asynccontextmanager
@@ -219,10 +297,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+cors_origins, cors_credentials = _parse_cors_allowed_origins()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=cors_origins,
+    allow_credentials=cors_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -233,18 +312,63 @@ async def root():
     return {"status": "ok", "service": "VeritasGuard", "version": "1.0.0"}
 
 
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok", "service": "VeritasGuard"}
+
+
+@app.get("/readyz")
+async def readyz():
+    db_status = get_db_runtime_status()
+    try:
+        from server.utils.mistral_client import get_mistral_client
+
+        get_mistral_client()
+        mistral_ready = True
+        mistral_error = None
+    except Exception as e:
+        mistral_ready = False
+        mistral_error = str(e)
+
+    ready = bool(db_status.get("healthy")) and mistral_ready
+    payload = {
+        "status": "ready" if ready else "degraded",
+        "database": {
+            "healthy": db_status.get("healthy", False),
+            "driver": db_status.get("driver"),
+            "known_hoaxes_count": db_status.get("known_hoaxes_count", 0),
+            "verification_results_count": db_status.get("verification_results_count", 0),
+            "database_url": _redact_database_url(str(db_status.get("database_url", ""))),
+            "error": db_status.get("error"),
+        },
+        "mistral": {
+            "ready": mistral_ready,
+            "error": mistral_error,
+        },
+    }
+    return JSONResponse(payload, status_code=200 if ready else 503)
+
+
 @app.post("/verify/text")
-async def verify_text_endpoint(text: str = Form(...)):
+async def verify_text_endpoint(request: Request, text: str = Form(...)):
     if not text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
+    client_ip = _client_identifier(request)
+    if not _apply_verify_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail="Rate limit reached. Please retry after a minute.")
 
     vid = str(uuid.uuid4())
+    _log_request_event("verify_text_received", verification_id=vid, client_ip=client_ip)
     await verify_text(text.strip(), verification_id=vid)
     return JSONResponse({"verification_id": vid, "status": "processing"})
 
 
 @app.post("/verify/image")
-async def verify_image_endpoint(file: UploadFile = File(...)):
+async def verify_image_endpoint(request: Request, file: UploadFile = File(...)):
+    client_ip = _client_identifier(request)
+    if not _apply_verify_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail="Rate limit reached. Please retry after a minute.")
+
     contents = await file.read()
     mime_type = file.content_type or "image/png"
 
@@ -261,6 +385,7 @@ async def verify_image_endpoint(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Could not extract text from image")
 
     vid = str(uuid.uuid4())
+    _log_request_event("verify_image_received", verification_id=vid, client_ip=client_ip, mime_type=mime_type)
     await verify_image_text(
         extracted_text.strip(),
         verification_id=vid,
@@ -286,7 +411,7 @@ async def whatsapp_webhook(request: Request):
     signature = request.headers.get("X-Twilio-Signature", "")
 
     if WHATSAPP_VALIDATE_SIGNATURE and auth_token:
-        if not _is_twilio_signature_valid(str(request.url), params, signature, auth_token):
+        if not _is_twilio_signature_valid(_canonical_request_url(request), params, signature, auth_token):
             raise HTTPException(status_code=403, detail="Invalid Twilio signature")
 
     sender = params.get("From", "unknown")
@@ -318,6 +443,13 @@ async def whatsapp_webhook(request: Request):
 
     verification_id = str(uuid.uuid4())
     inbound_sid = params.get("MessageSid", "")
+    _log_request_event(
+        "whatsapp_inbound_received",
+        verification_id=verification_id,
+        sender=sender,
+        inbound_sid=inbound_sid,
+        has_media=num_media > 0,
+    )
 
     if num_media > 0:
         account_sid = params.get("AccountSid", "")
@@ -391,7 +523,8 @@ async def get_result_endpoint(verification_id: str):
 
 
 @app.get("/result/{verification_id}/debug")
-async def get_result_debug_endpoint(verification_id: str):
+async def get_result_debug_endpoint(verification_id: str, x_admin_key: str | None = Header(default=None)):
+    _require_admin_key(x_admin_key)
     result = get_result(verification_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Verification not found")
@@ -414,6 +547,31 @@ async def get_result_debug_endpoint(verification_id: str):
         "override_match_score": result.get("override_match_score"),
     }
     return JSONResponse(debug_payload)
+
+
+@app.get("/ops/runtime")
+async def ops_runtime(x_admin_key: str | None = Header(default=None)):
+    _require_admin_key(x_admin_key)
+    db_status = get_db_runtime_status()
+    payload = {
+        "service": "VeritasGuard",
+        "database": {
+            "healthy": db_status.get("healthy", False),
+            "driver": db_status.get("driver"),
+            "known_hoaxes_count": db_status.get("known_hoaxes_count", 0),
+            "verification_results_count": db_status.get("verification_results_count", 0),
+            "database_url": _redact_database_url(str(db_status.get("database_url", ""))),
+            "error": db_status.get("error"),
+        },
+        "rate_limits": {
+            "verify_window_seconds": VERIFY_RATE_LIMIT_WINDOW_SECONDS,
+            "verify_max_requests": VERIFY_RATE_LIMIT_MAX_REQUESTS,
+            "whatsapp_window_seconds": WHATSAPP_RATE_LIMIT_WINDOW_SECONDS,
+            "whatsapp_max_requests": WHATSAPP_RATE_LIMIT_MAX_REQUESTS,
+        },
+        "active_whatsapp_jobs": len(_whatsapp_jobs),
+    }
+    return JSONResponse(payload)
 
 
 @app.get("/result/{verification_id}/audio")

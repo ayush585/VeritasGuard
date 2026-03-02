@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -45,4 +45,20 @@ class VerificationResult(BaseModel):
     audio_status: Optional[str] = None
     audio_message: Optional[str] = None
     ocr_metadata: Optional[dict] = None
+    trace_id: Optional[str] = None
+    completed_at: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    cached: Optional[bool] = None
     error: Optional[str] = None
+
+
+class ServiceHealthResponse(BaseModel):
+    status: str
+    service: str
+
+
+class ServiceReadinessResponse(BaseModel):
+    status: str
+    database: dict[str, Any]
+    mistral: dict[str, Any]

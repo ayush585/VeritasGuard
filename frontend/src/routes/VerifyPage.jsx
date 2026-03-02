@@ -1,7 +1,8 @@
-import { useEffect, useReducer, useRef } from 'react'
+﻿import { useEffect, useReducer, useRef } from 'react'
 import { fetchResultAudio, getResult, getResultDebug, submitImage, submitText } from '../utils/api'
 import { useGsapContext, gsap } from '../hooks/useGsapContext'
 import InputModule from '../components/InputModule'
+import BrandLogo from '../components/BrandLogo'
 import PipelinePanel from '../components/PipelinePanel'
 import VerdictCard from '../components/VerdictCard'
 import EvidencePanel from '../components/EvidencePanel'
@@ -47,7 +48,6 @@ const SAMPLE_CASES = [
     mode: 'text',
   },
 ]
-
 const MAX_IMAGE_SIZE = 4 * 1024 * 1024
 
 const initialState = {
@@ -185,8 +185,17 @@ function VerifyPage({ navigate }) {
     try {
       const payload = await getResultDebug(verificationId)
       dispatch({ type: 'SET_DEBUG', payload })
-    } catch {
-      dispatch({ type: 'SET_DEBUG_LOADING', payload: false })
+    } catch (error) {
+      dispatch({
+        type: 'SET_DEBUG',
+        payload: {
+          verification_id: verificationId,
+          error:
+            error?.response?.status === 403
+              ? 'Debug trace is protected. Set VITE_ADMIN_API_KEY in frontend env to unlock.'
+              : 'Debug trace unavailable for this run.',
+        },
+      })
     }
   }
 
@@ -300,13 +309,10 @@ function VerifyPage({ navigate }) {
   return (
     <div className="page verify-page" ref={rootRef}>
       <header className="topbar">
-        <div className="brand-lockup">
-          <div className="brand-mark" aria-hidden="true" />
-          <div>
-            <strong>VeritasGuard Command Center</strong>
-            <span>Built to interrupt harmful virality before escalation</span>
-          </div>
-        </div>
+        <BrandLogo
+          title="VeritasGuard"
+          subtitle="Command Center · Built to interrupt harmful virality before escalation"
+        />
         <button className="btn btn-secondary" type="button" onClick={() => navigate('/')}>
           Back to Narrative
         </button>
@@ -363,3 +369,4 @@ function VerifyPage({ navigate }) {
 }
 
 export default VerifyPage
+

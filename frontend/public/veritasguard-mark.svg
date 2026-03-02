@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="vgGlow" cx="50%" cy="36%" r="66%">
+      <stop offset="0%" stop-color="#ffd56e" stop-opacity="0.74" />
+      <stop offset="58%" stop-color="#f27a4d" stop-opacity="0.42" />
+      <stop offset="100%" stop-color="#f04543" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="vgShieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd66d" />
+      <stop offset="55%" stop-color="#ff9c4a" />
+      <stop offset="100%" stop-color="#f04543" />
+    </linearGradient>
+    <linearGradient id="vgCheckGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffca69" />
+      <stop offset="65%" stop-color="#ff7a4d" />
+      <stop offset="100%" stop-color="#ff4f45" />
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" fill="#0b1220" />
+  <circle cx="64" cy="58" r="54" fill="url(#vgGlow)" />
+  <path
+    d="M20 22h88v36c0 30-19 54-44 67-25-13-44-37-44-67V22z"
+    fill="none"
+    stroke="url(#vgShieldGradient)"
+    stroke-width="5"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M36 70c11-3 18 5 23 17 16-30 34-44 53-45-24 5-40 18-53 47H47c-4-9-8-16-11-19z"
+    fill="url(#vgCheckGradient)"
+  />
+  <path d="M58 88c14-28 30-42 50-47" fill="none" stroke="#1a263a" stroke-width="2.2" />
+</svg>

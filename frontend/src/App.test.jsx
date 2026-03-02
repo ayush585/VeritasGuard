@@ -60,8 +60,8 @@ describe('VeritasGuard Frontend Rebuild', () => {
       evidence_graph: {
         claim_nodes: [{ id: 'claim1', text: 'Microchips in vaccines' }],
         evidence_nodes: [{ id: 'ev1', text: 'PIB debunk' }],
-        edges: [{ from: 'claim1', to: 'ev1', type: 'refutes' }],
-        resolution: 'Refute edge dominates.',
+        contradiction_edges: [{ from: 'claim1', to: 'ev1', relation: 'refutes' }],
+        resolution: { path: 'Refute edge dominates.' },
       },
       audio_available: false,
       audio_status: 'disabled',
@@ -121,8 +121,8 @@ describe('VeritasGuard Frontend Rebuild', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /Verify Claim/i }))
 
-    await waitFor(() => expect(screen.getByText(/Debug Trace/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Debug Trace/i })).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: /Open Debug Trace/i }))
-    await waitFor(() => expect(screen.getByText(/trace_dbg1/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/"trace_id": "trace_dbg1"/i)).toBeInTheDocument())
   })
 })

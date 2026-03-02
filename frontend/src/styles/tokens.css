@@ -1,20 +1,37 @@
 :root {
-  --bg: #07111d;
-  --bg-2: #0b1a2d;
-  --surface: rgba(12, 24, 42, 0.94);
-  --surface-2: rgba(16, 31, 52, 0.93);
-  --line: #26405f;
-  --line-soft: #1f3550;
-  --text: #e6eef8;
-  --text-muted: #9fb2c8;
-  --accent: #1aa4a9;
-  --accent-2: #f08d4f;
-  --tone-success: #25b768;
-  --tone-warning: #d49d2c;
-  --tone-danger: #e06545;
-  --tone-neutral: #5f7f9f;
+  --bg: #070f1c;
+  --bg-2: #0b1628;
+  --bg-3: #101f34;
+  --surface: rgba(15, 26, 44, 0.93);
+  --surface-2: rgba(20, 35, 58, 0.94);
+  --surface-3: rgba(22, 39, 64, 0.94);
+  --line: #2c4667;
+  --line-soft: #223a58;
+  --text: #e7eef8;
+  --text-muted: #9fb0c6;
+  --text-subtle: #7f94ad;
+  --accent: #1ea8ab;
+  --accent-2: #ef9a4e;
+  --accent-3: #f3594d;
+  --tone-success: #2bb870;
+  --tone-warning: #dc9f31;
+  --tone-danger: #e7654f;
+  --tone-neutral: #6082a6;
   --radius: 14px;
-  --shadow: 0 14px 32px rgba(0, 0, 0, 0.32);
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 14px;
+  --space-4: 18px;
+  --space-5: 24px;
+  --shadow: 0 16px 38px rgba(0, 0, 0, 0.34);
+  --shadow-soft: 0 8px 22px rgba(0, 0, 0, 0.26);
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 15px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
 }
 
 * {
@@ -33,8 +50,9 @@ body {
   font-family: 'Space Grotesk', 'Noto Sans Devanagari', 'Noto Sans Tamil', 'Noto Sans Bengali', 'Noto Sans Telugu',
     -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background:
-    radial-gradient(900px 430px at 0% -14%, rgba(26, 164, 169, 0.22), transparent 72%),
-    radial-gradient(850px 360px at 100% 0%, rgba(240, 141, 79, 0.18), transparent 70%),
+    radial-gradient(1020px 460px at -8% -12%, rgba(30, 168, 171, 0.23), transparent 74%),
+    radial-gradient(920px 420px at 104% -6%, rgba(239, 154, 78, 0.2), transparent 71%),
+    radial-gradient(1000px 520px at 50% 120%, rgba(95, 54, 153, 0.08), transparent 68%),
     var(--bg);
   color: var(--text);
 }

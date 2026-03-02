@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import time
 import traceback
@@ -15,6 +16,8 @@ from server.agents.translation import TranslationAgent
 from server.agents.verdict import VerdictAgent
 from server.languages import normalize_language_code
 from server.utils.audio_tts import synthesize_verdict_audio
+
+logger = logging.getLogger("veritasguard.orchestrator")
 
 # Global agent instances (created once, reused)
 language_agent = LanguageDetectionAgent()
@@ -122,6 +125,10 @@ def _persist_result(verification_id: str, payload: dict[str, Any]):
         save_verification_result(verification_id, status, safe_payload, now_iso)
     except Exception:
         pass
+
+
+def _log_pipeline_event(event: str, *, verification_id: str, trace_id: str, **data):
+    logger.info("%s | verification_id=%s trace_id=%s data=%s", event, verification_id, trace_id, data)
 
 
 def _cache_key(text: str, language: str, input_type: str) -> str:
@@ -519,6 +526,12 @@ async def verify_text(
     }
     if ocr_metadata:
         results_store[vid]["ocr_metadata"] = ocr_metadata
+    _log_pipeline_event(
+        "verification_enqueued",
+        verification_id=vid,
+        trace_id=trace_id,
+        input_type=input_type,
+    )
     _persist_result(vid, results_store[vid])
 
     asyncio.create_task(
@@ -574,6 +587,7 @@ async def _run_pipeline(
     ocr_metadata: dict[str, Any],
 ):
     result = results_store[vid]
+    trace_id = str(result.get("trace_id", f"trace_{vid[:8]}"))
     if "_pipeline_deadline_perf" not in result:
         result["_pipeline_start_perf"] = time.perf_counter()
         result["_pipeline_deadline_perf"] = time.perf_counter() + PIPELINE_DEADLINE_SECONDS
@@ -587,6 +601,14 @@ async def _run_pipeline(
             result["cached"] = True
             result["completed_at"] = datetime.utcnow().isoformat()
             _persist_result(vid, result)
+            _log_pipeline_event(
+                "verification_completed_cached",
+                verification_id=vid,
+                trace_id=trace_id,
+                verdict=result.get("verdict"),
+                search_provider=result.get("search_provider"),
+                search_results_count=result.get("search_results_count"),
+            )
             return
 
         # Stage 1: Language detection
@@ -922,10 +944,29 @@ async def _run_pipeline(
         }
         _cache_set(cache_key, cache_snapshot)
         _persist_result(vid, result)
+        _log_pipeline_event(
+            "verification_completed",
+            verification_id=vid,
+            trace_id=trace_id,
+            verdict=result.get("verdict"),
+            confidence=result.get("confidence"),
+            search_provider=result.get("search_provider"),
+            search_results_count=result.get("search_results_count"),
+            deterministic_override_applied=result.get("deterministic_override_applied", False),
+            warnings=result.get("warnings", []),
+            stage_timings=result.get("stage_timings", {}),
+        )
     except Exception as e:
         traceback.print_exc()
         result.update({"status": "error", "stage": "error", "error": str(e), "audio_status": "failed"})
         _persist_result(vid, result)
+        _log_pipeline_event(
+            "verification_failed",
+            verification_id=vid,
+            trace_id=trace_id,
+            error=str(e),
+            stage=result.get("stage"),
+        )
     finally:
         result.pop("_pipeline_start_perf", None)
         result.pop("_pipeline_deadline_perf", None)

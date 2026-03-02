@@ -1,15 +1,16 @@
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 14px;
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(4px);
 }
 
 .panel-head {
   display: grid;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 .panel-head h2,
@@ -20,7 +21,7 @@
 .panel-head p {
   color: var(--text-muted);
   line-height: 1.45;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 .panel-head.compact {
@@ -30,31 +31,33 @@
 .mode-switch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .mode-switch button {
   border: 1px solid var(--line);
-  background: #10243d;
+  background: var(--surface-2);
   color: var(--text-muted);
-  padding: 10px;
+  padding: 10px 12px;
   border-radius: 10px;
   cursor: pointer;
+  transition: 180ms ease;
 }
 
 .mode-switch button.active {
   color: #ebfffd;
-  background: linear-gradient(130deg, rgba(26, 164, 169, 0.9), rgba(17, 100, 145, 0.86));
+  background: linear-gradient(130deg, rgba(30, 168, 171, 0.9), rgba(15, 95, 138, 0.88));
   border-color: rgba(87, 220, 220, 0.5);
+  box-shadow: 0 0 0 1px rgba(87, 220, 220, 0.32), inset 0 0 24px rgba(32, 151, 159, 0.2);
 }
 
 .field {
   display: grid;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .field span {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
 }
 
@@ -64,10 +67,18 @@
   width: 100%;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: #0f2138;
+  background: var(--surface-2);
   color: var(--text);
   padding: 10px;
   font: inherit;
+  transition: 160ms ease;
+}
+
+.field select:focus,
+.field textarea:focus,
+.field input[type='file']:focus {
+  border-color: rgba(89, 196, 200, 0.7);
+  box-shadow: 0 0 0 3px rgba(30, 168, 171, 0.14);
 }
 
 .field textarea {
@@ -84,11 +95,12 @@
 .sticky-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--space-1);
   position: sticky;
-  bottom: 8px;
-  background: linear-gradient(180deg, rgba(7, 17, 29, 0), rgba(7, 17, 29, 0.96) 25%);
-  padding-top: 8px;
+  bottom: 6px;
+  background: linear-gradient(180deg, rgba(7, 17, 29, 0), rgba(7, 17, 29, 0.97) 25%);
+  padding-top: 10px;
+  z-index: 2;
 }
 
 .btn {
@@ -111,13 +123,14 @@
 
 .btn-primary {
   color: #edfffe;
-  background: linear-gradient(130deg, rgba(26, 164, 169, 0.95), rgba(20, 106, 145, 0.92));
+  background: linear-gradient(130deg, rgba(30, 168, 171, 0.96), rgba(17, 112, 153, 0.92));
   border-color: rgba(87, 220, 220, 0.45);
+  box-shadow: 0 8px 20px rgba(8, 59, 73, 0.42);
 }
 
 .btn-secondary {
   color: #d9ebfb;
-  background: #122942;
+  background: #132b45;
   border-color: #315173;
 }
 
@@ -129,18 +142,19 @@
 
 .pipeline-list {
   display: grid;
-  gap: 10px;
+  gap: var(--space-2);
 }
 
 .pipeline-item {
   display: grid;
   grid-template-columns: 14px minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: var(--space-2);
   align-items: center;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
   background: var(--surface-2);
   padding: 10px;
+  transition: 160ms ease;
 }
 
 .pipeline-marker {
@@ -157,6 +171,10 @@
 .pipeline-item.state-active .pipeline-marker {
   background: var(--accent);
   box-shadow: 0 0 0 6px rgba(26, 164, 169, 0.17);
+}
+
+.pipeline-item.state-active {
+  border-color: rgba(92, 205, 207, 0.46);
 }
 
 .pipeline-item.state-degraded .pipeline-marker {
@@ -176,7 +194,7 @@
 
 .pipeline-content p {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   margin-top: 4px;
 }
 

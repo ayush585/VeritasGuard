@@ -19,7 +19,11 @@ function EvidenceGraphPanel({ result }) {
   const graph = result?.evidence_graph || {}
   const claimNodes = Array.isArray(graph.claim_nodes) ? graph.claim_nodes : []
   const evidenceNodes = Array.isArray(graph.evidence_nodes) ? graph.evidence_nodes : []
-  const edges = Array.isArray(graph.edges) ? graph.edges : []
+  const supportEdges = Array.isArray(graph.support_edges) ? graph.support_edges : []
+  const contradictionEdges = Array.isArray(graph.contradiction_edges) ? graph.contradiction_edges : []
+  const edges = [...supportEdges, ...contradictionEdges]
+  const decisionPath =
+    graph?.final_decision_path?.path || graph?.resolution?.path || graph?.resolution || graph?.final_decision_path
 
   useGsapContext(
     scopeRef,
@@ -67,11 +71,11 @@ function EvidenceGraphPanel({ result }) {
             <ul>
               {edges.slice(0, 8).map((edge, idx) => (
                 <li key={`${edge.from || 'f'}-${edge.to || 't'}-${idx}`}>
-                  {asText(edge.from, 'Claim')} {' -> '} {asText(edge.to, 'Evidence')} ({asText(edge.type, 'link')})
+                  {asText(edge.from, 'Claim')} {' -> '} {asText(edge.to, 'Evidence')} ({asText(edge.relation || edge.type, 'link')})
                 </li>
               ))}
             </ul>
-            <p className="decision-path">{asText(graph.resolution || graph.final_decision_path, 'Decision path unavailable.')}</p>
+            <p className="decision-path">{asText(decisionPath, 'Decision path unavailable.')}</p>
           </div>
         </div>
       )}

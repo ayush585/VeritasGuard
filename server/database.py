@@ -2,13 +2,35 @@ import json
 import os
 import re
 import unicodedata
-from sqlalchemy import create_engine, Column, Integer, String, Text
-from sqlalchemy.orm import sessionmaker, declarative_base
+from typing import Any
+
+from dotenv import load_dotenv
+from sqlalchemy import Column, Integer, String, Text, create_engine, text
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 Base = declarative_base()
-DATABASE_URL = "sqlite:///veritasguard.db"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine)
+
+load_dotenv()
+
+
+def get_database_url() -> str:
+    return os.getenv("DATABASE_URL", "sqlite:///veritasguard.db")
+
+
+def is_sqlite_url(url: str) -> bool:
+    return url.startswith("sqlite")
+
+
+def create_db_engine(url: str):
+    engine_kwargs: dict[str, Any] = {"pool_pre_ping": True}
+    if is_sqlite_url(url):
+        engine_kwargs["connect_args"] = {"check_same_thread": False}
+    return create_engine(url, **engine_kwargs)
+
+
+DATABASE_URL = get_database_url()
+engine = create_db_engine(DATABASE_URL)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 HOAX_REFERENCE_MAP: dict[str, list[dict]] = {}
 
 
@@ -35,6 +57,30 @@ class VerificationRecord(Base):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+
+
+def get_db_runtime_status() -> dict[str, Any]:
+    session = SessionLocal()
+    try:
+        session.execute(text("SELECT 1"))
+        hoax_count = session.query(KnownHoax).count()
+        verification_count = session.query(VerificationRecord).count()
+        return {
+            "healthy": True,
+            "driver": "sqlite" if is_sqlite_url(DATABASE_URL) else "postgres",
+            "database_url": DATABASE_URL,
+            "known_hoaxes_count": hoax_count,
+            "verification_results_count": verification_count,
+        }
+    except Exception as e:
+        return {
+            "healthy": False,
+            "driver": "sqlite" if is_sqlite_url(DATABASE_URL) else "postgres",
+            "database_url": DATABASE_URL,
+            "error": str(e),
+        }
+    finally:
+        session.close()
 
 
 def seed_hoaxes():
